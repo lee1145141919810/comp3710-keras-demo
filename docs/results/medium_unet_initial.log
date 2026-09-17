@@ -1,0 +1,107 @@
+device: cpu  autocast: None
+
+loading train images:   0%|          | 0/9664 [00:00<?, ?img/s]
+loading train images:   2%|▏         | 184/9664 [00:00<00:05, 1838.45img/s]
+loading train images:   4%|▍         | 375/9664 [00:00<00:04, 1879.45img/s]
+loading train images:   6%|▌         | 583/9664 [00:00<00:04, 1968.46img/s]
+loading train images:   8%|▊         | 790/9664 [00:00<00:04, 2007.39img/s]
+loading train images:  10%|█         | 1003/9664 [00:00<00:04, 2049.68img/s]
+loading train images:  12%|█▎        | 1208/9664 [00:00<00:04, 2047.03img/s]
+loading train images:  15%|█▍        | 1416/9664 [00:00<00:04, 2055.64img/s]
+loading train images:  17%|█▋        | 1624/9664 [00:00<00:03, 2062.12img/s]
+loading train images:  19%|█▉        | 1834/9664 [00:00<00:03, 2073.12img/s]
+loading train images:  21%|██        | 2045/9664 [00:01<00:03, 2083.64img/s]
+loading train images:  23%|██▎       | 2256/9664 [00:01<00:03, 2088.87img/s]
+loading train images:  26%|██▌       | 2468/9664 [00:01<00:03, 2095.39img/s]
+loading train images:  28%|██▊       | 2678/9664 [00:01<00:03, 2096.33img/s]
+loading train images:  30%|██▉       | 2888/9664 [00:01<00:03, 2092.85img/s]
+loading train images:  32%|███▏      | 3098/9664 [00:01<00:03, 2082.75img/s]
+loading train images:  34%|███▍      | 3307/9664 [00:01<00:03, 2072.83img/s]
+loading train images:  36%|███▋      | 3515/9664 [00:01<00:02, 2066.24img/s]
+loading train images:  39%|███▊      | 3722/9664 [00:01<00:02, 2054.00img/s]
+loading train images:  41%|████      | 3928/9664 [00:01<00:02, 1919.93img/s]
+loading train images:  43%|████▎     | 4122/9664 [00:02<00:02, 1919.85img/s]
+loading train images:  45%|████▍     | 4327/9664 [00:02<00:02, 1956.07img/s]
+loading train images:  47%|████▋     | 4527/9664 [00:02<00:02, 1967.99img/s]
+loading train images:  49%|████▉     | 4730/9664 [00:02<00:02, 1983.49img/s]
+loading train images:  51%|█████     | 4929/9664 [00:02<00:02, 1982.31img/s]
+loading train images:  53%|█████▎    | 5128/9664 [00:02<00:02, 1880.94img/s]
+loading train images:  55%|█████▌    | 5318/9664 [00:02<00:02, 1866.45img/s]
+loading train images:  57%|█████▋    | 5516/9664 [00:02<00:02, 1897.71img/s]
+loading train images:  59%|█████▉    | 5718/9664 [00:02<00:02, 1933.11img/s]
+loading train images:  61%|██████    | 5919/9664 [00:02<00:01, 1954.11img/s]
+loading train images:  63%|██████▎   | 6117/9664 [00:03<00:01, 1960.21img/s]
+loading train images:  65%|██████▌   | 6314/9664 [00:03<00:01, 1962.46img/s]
+loading train images:  67%|██████▋   | 6517/9664 [00:03<00:01, 1979.80img/s]
+loading train images:  70%|██████▉   | 6720/9664 [00:03<00:01, 1992.99img/s]
+loading train images:  72%|███████▏  | 6920/9664 [00:03<00:01, 1986.45img/s]
+loading train images:  74%|███████▎  | 7121/9664 [00:03<00:01, 1992.32img/s]
+loading train images:  76%|███████▌  | 7321/9664 [00:03<00:01, 1993.21img/s]
+loading train images:  78%|███████▊  | 7524/9664 [00:03<00:01, 2001.17img/s]
+loading train images:  80%|███████▉  | 7725/9664 [00:03<00:01, 1843.73img/s]
+loading train images:  82%|████████▏ | 7920/9664 [00:03<00:00, 1871.81img/s]
+loading train images:  84%|████████▍ | 8114/9664 [00:04<00:00, 1888.66img/s]
+loading train images:  86%|████████▌ | 8317/9664 [00:04<00:00, 1926.89img/s]
+loading train images:  88%|████████▊ | 8517/9664 [00:04<00:00, 1945.22img/s]
+loading train images:  90%|█████████ | 8719/9664 [00:04<00:00, 1965.30img/s]
+loading train images:  92%|█████████▏| 8923/9664 [00:04<00:00, 1986.78img/s]
+loading train images:  94%|█████████▍| 9123/9664 [00:04<00:00, 1968.30img/s]
+loading train images:  96%|█████████▋| 9321/9664 [00:04<00:00, 1965.62img/s]
+loading train images:  99%|█████████▊| 9520/9664 [00:04<00:00, 1971.76img/s]
+                                                                            
+
+loading train masks:   0%|          | 0/9664 [00:00<?, ?img/s]
+loading train masks:   4%|▍         | 412/9664 [00:00<00:02, 4116.55img/s]
+loading train masks:   9%|▉         | 900/9664 [00:00<00:01, 4565.43img/s]
+loading train masks:  15%|█▍        | 1430/9664 [00:00<00:01, 4897.10img/s]
+loading train masks:  20%|█▉        | 1920/9664 [00:00<00:01, 4828.66img/s]
+loading train masks:  25%|██▍       | 2403/9664 [00:00<00:01, 4663.79img/s]
+loading train masks:  30%|██▉       | 2871/9664 [00:00<00:01, 4590.81img/s]
+loading train masks:  34%|███▍      | 3331/9664 [00:00<00:01, 4504.05img/s]
+loading train masks:  39%|███▉      | 3802/9664 [00:00<00:01, 4565.52img/s]
+loading train masks:  44%|████▍     | 4279/9664 [00:00<00:01, 4626.37img/s]
+loading train masks:  49%|████▉     | 4743/9664 [00:01<00:01, 4556.02img/s]
+loading train masks:  54%|█████▍    | 5200/9664 [00:01<00:00, 4519.19img/s]
+loading train masks:  58%|█████▊    | 5653/9664 [00:01<00:00, 4484.29img/s]
+loading train masks:  63%|██████▎   | 6102/9664 [00:01<00:00, 4397.01img/s]
+loading train masks:  68%|██████▊   | 6543/9664 [00:01<00:00, 4369.29img/s]
+loading train masks:  72%|███████▏  | 6981/9664 [00:01<00:00, 4325.47img/s]
+loading train masks:  77%|███████▋  | 7414/9664 [00:01<00:00, 4302.57img/s]
+loading train masks:  81%|████████  | 7845/9664 [00:01<00:00, 4301.60img/s]
+loading train masks:  86%|████████▌ | 8288/9664 [00:01<00:00, 4339.35img/s]
+loading train masks:  90%|█████████ | 8723/9664 [00:01<00:00, 4309.29img/s]
+loading train masks:  95%|█████████▌| 9193/9664 [00:02<00:00, 4424.81img/s]
+                                                                           
+
+loading validate images:   0%|          | 0/1120 [00:00<?, ?img/s]
+loading validate images:  13%|█▎        | 145/1120 [00:00<00:00, 1447.95img/s]
+loading validate images:  29%|██▊       | 320/1120 [00:00<00:00, 1622.89img/s]
+loading validate images:  46%|████▌     | 513/1120 [00:00<00:00, 1759.59img/s]
+loading validate images:  62%|██████▏   | 689/1120 [00:00<00:00, 1670.61img/s]
+loading validate images:  78%|███████▊  | 871/1120 [00:00<00:00, 1719.37img/s]
+loading validate images:  94%|█████████▍| 1058/1120 [00:00<00:00, 1768.30img/s]
+                                                                               
+
+loading validate masks:   0%|          | 0/1120 [00:00<?, ?img/s]
+loading validate masks:  37%|███▋      | 419/1120 [00:00<00:00, 4181.76img/s]
+loading validate masks:  77%|███████▋  | 857/1120 [00:00<00:00, 4297.49img/s]
+                                                                             
+train 9664 / validate 1120 / test not loaded slices; train class fractions {'background': 0.723, 'CSF': 0.056, 'grey matter': 0.114, 'white matter': 0.107}
+UNet(base=8, depth=3): 121,060 parameters
+epoch   1/25  loss 0.6398  train DSC [0.977 0.799 0.760 0.906]  val DSC [0.996 0.863 0.894 0.942] (mean 0.9235)  [202s]
+Traceback (most recent call last):
+  File "<WORKSPACE>/outputs/comp3710-keras-demo/part4_recognition/unet/train.py", line 165, in <module>
+    main()
+  File "<WORKSPACE>/outputs/comp3710-keras-demo/part4_recognition/unet/train.py", line 123, in main
+    train_loss, train_dice = train_one_epoch(model, train_loader, optimizer, scaler, device, amp_dtype, args.dice_weight, args.augment)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKSPACE>/outputs/comp3710-keras-demo/part4_recognition/unet/train.py", line 57, in train_one_epoch
+    scaler.scale(loss).backward()
+  File "<WORKSPACE>/work/venv/lib/python3.12/site-packages/torch/_tensor.py", line 623, in backward
+    torch.autograd.backward(
+  File "<WORKSPACE>/work/venv/lib/python3.12/site-packages/torch/autograd/__init__.py", line 395, in backward
+    _engine_run_backward(
+  File "<WORKSPACE>/work/venv/lib/python3.12/site-packages/torch/autograd/graph.py", line 1072, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

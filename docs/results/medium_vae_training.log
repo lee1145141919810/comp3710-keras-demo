@@ -1,0 +1,79 @@
+Matplotlib is building the font cache; this may take a moment.
+device: cpu
+
+loading train images:   0%|          | 0/9664 [00:00<?, ?img/s]
+loading train images:   2%|▏         | 199/9664 [00:00<00:04, 1983.83img/s]
+loading train images:   5%|▍         | 440/9664 [00:00<00:04, 2231.55img/s]
+loading train images:   7%|▋         | 695/9664 [00:00<00:03, 2373.30img/s]
+loading train images:  10%|▉         | 947/9664 [00:00<00:03, 2428.77img/s]
+loading train images:  12%|█▏        | 1201/9664 [00:00<00:03, 2466.37img/s]
+loading train images:  15%|█▌        | 1458/9664 [00:00<00:03, 2501.52img/s]
+loading train images:  18%|█▊        | 1710/9664 [00:00<00:03, 2504.88img/s]
+loading train images:  20%|██        | 1966/9664 [00:00<00:03, 2521.78img/s]
+loading train images:  23%|██▎       | 2222/9664 [00:00<00:02, 2530.74img/s]
+loading train images:  26%|██▌       | 2476/9664 [00:01<00:02, 2532.66img/s]
+loading train images:  28%|██▊       | 2730/9664 [00:01<00:02, 2527.98img/s]
+loading train images:  31%|███       | 2983/9664 [00:01<00:02, 2524.67img/s]
+loading train images:  34%|███▎      | 3243/9664 [00:01<00:02, 2547.03img/s]
+loading train images:  36%|███▋      | 3505/9664 [00:01<00:02, 2567.55img/s]
+loading train images:  39%|███▉      | 3768/9664 [00:01<00:02, 2583.78img/s]
+loading train images:  42%|████▏     | 4027/9664 [00:01<00:02, 2412.76img/s]
+loading train images:  44%|████▍     | 4288/9664 [00:01<00:02, 2468.75img/s]
+loading train images:  47%|████▋     | 4552/9664 [00:01<00:02, 2517.85img/s]
+loading train images:  50%|████▉     | 4814/9664 [00:01<00:01, 2547.22img/s]
+loading train images:  52%|█████▏    | 5070/9664 [00:02<00:01, 2486.84img/s]
+loading train images:  55%|█████▌    | 5320/9664 [00:02<00:01, 2407.66img/s]
+loading train images:  58%|█████▊    | 5581/9664 [00:02<00:01, 2463.01img/s]
+loading train images:  60%|██████    | 5845/9664 [00:02<00:01, 2514.13img/s]
+loading train images:  63%|██████▎   | 6105/9664 [00:02<00:01, 2537.83img/s]
+loading train images:  66%|██████▌   | 6368/9664 [00:02<00:01, 2562.72img/s]
+loading train images:  69%|██████▊   | 6631/9664 [00:02<00:01, 2579.75img/s]
+loading train images:  71%|███████▏  | 6894/9664 [00:02<00:01, 2594.05img/s]
+loading train images:  74%|███████▍  | 7157/9664 [00:02<00:00, 2602.11img/s]
+loading train images:  77%|███████▋  | 7419/9664 [00:02<00:00, 2606.66img/s]
+loading train images:  79%|███████▉  | 7680/9664 [00:03<00:00, 2449.12img/s]
+loading train images:  82%|████████▏ | 7927/9664 [00:03<00:00, 2431.59img/s]
+loading train images:  85%|████████▍ | 8186/9664 [00:03<00:00, 2475.16img/s]
+loading train images:  87%|████████▋ | 8446/9664 [00:03<00:00, 2509.40img/s]
+loading train images:  90%|█████████ | 8709/9664 [00:03<00:00, 2543.27img/s]
+loading train images:  93%|█████████▎| 8975/9664 [00:03<00:00, 2577.37img/s]
+loading train images:  96%|█████████▌| 9235/9664 [00:03<00:00, 2581.79img/s]
+loading train images:  98%|█████████▊| 9496/9664 [00:03<00:00, 2589.15img/s]
+                                                                            
+
+loading validate images:   0%|          | 0/1120 [00:00<?, ?img/s]
+loading validate images:  23%|██▎       | 253/1120 [00:00<00:00, 2525.86img/s]
+loading validate images:  46%|████▌     | 512/1120 [00:00<00:00, 2562.71img/s]
+loading validate images:  69%|██████▊   | 769/1120 [00:00<00:00, 2302.33img/s]
+loading validate images:  92%|█████████▏| 1029/1120 [00:00<00:00, 2409.67img/s]
+                                                                               
+
+loading test images:   0%|          | 0/544 [00:00<?, ?img/s]
+loading test images:  34%|███▍      | 186/544 [00:00<00:00, 1859.74img/s]
+loading test images:  68%|██████▊   | 372/544 [00:00<00:00, 1850.54img/s]
+                                                                         
+train 9664 / validate 1120 / test 544 slices at 64x64
+ConvVAE latent_dim=2: 111,429 parameters
+epoch   1/15  train -ELBO   1428.96 (recon  1422.99 kl   5.96) | val -ELBO   1135.93 (recon  1130.74 kl   5.19)  [     7s]
+epoch   2/15  train -ELBO   1096.81 (recon  1091.74 kl   5.06) | val -ELBO   1103.85 (recon  1099.18 kl   4.67)  [    14s]
+epoch   3/15  train -ELBO   1077.40 (recon  1072.67 kl   4.73) | val -ELBO   1089.34 (recon  1084.85 kl   4.49)  [    21s]
+epoch   4/15  train -ELBO   1071.48 (recon  1067.05 kl   4.43) | val -ELBO   1082.30 (recon  1078.20 kl   4.09)  [    28s]
+epoch   5/15  train -ELBO   1068.60 (recon  1064.41 kl   4.19) | val -ELBO   1080.71 (recon  1076.70 kl   4.01)  [    35s]
+epoch   6/15  train -ELBO   1067.06 (recon  1063.03 kl   4.02) | val -ELBO   1080.64 (recon  1077.00 kl   3.64)  [    42s]
+epoch   7/15  train -ELBO   1065.93 (recon  1062.02 kl   3.91) | val -ELBO   1078.58 (recon  1075.11 kl   3.47)  [    49s]
+epoch   8/15  train -ELBO   1065.06 (recon  1061.20 kl   3.86) | val -ELBO   1078.10 (recon  1074.41 kl   3.69)  [    57s]
+epoch   9/15  train -ELBO   1064.43 (recon  1060.62 kl   3.81) | val -ELBO   1077.66 (recon  1074.00 kl   3.66)  [    67s]
+epoch  10/15  train -ELBO   1064.04 (recon  1060.23 kl   3.81) | val -ELBO   1077.38 (recon  1073.74 kl   3.63)  [    79s]
+epoch  11/15  train -ELBO   1063.65 (recon  1059.86 kl   3.79) | val -ELBO   1077.68 (recon  1073.98 kl   3.71)  [    91s]
+epoch  12/15  train -ELBO   1063.43 (recon  1059.68 kl   3.76) | val -ELBO   1076.94 (recon  1073.22 kl   3.73)  [   103s]
+epoch  13/15  train -ELBO   1063.17 (recon  1059.36 kl   3.81) | val -ELBO   1077.13 (recon  1073.57 kl   3.56)  [   115s]
+epoch  14/15  train -ELBO   1063.04 (recon  1059.25 kl   3.79) | val -ELBO   1076.81 (recon  1073.12 kl   3.69)  [   128s]
+epoch  15/15  train -ELBO   1062.94 (recon  1059.17 kl   3.77) | val -ELBO   1076.92 (recon  1073.24 kl   3.68)  [   140s]
+training finished in 140s; best validation -ELBO 1076.81 -> outputs/comp3710-keras-demo/results/medium_vae64/vae_latent2.pt
+[saved] outputs/comp3710-keras-demo/results/medium_vae64/loss_latent2.png
+[saved] outputs/comp3710-keras-demo/results/medium_vae64/loss_terms_latent2.png
+[saved] outputs/comp3710-keras-demo/results/medium_vae64/reconstructions_latent2.png
+[saved] outputs/comp3710-keras-demo/results/medium_vae64/prior_samples_latent2.png
+[saved] outputs/comp3710-keras-demo/results/medium_vae64/interpolations_latent2.png
+[saved] outputs/comp3710-keras-demo/results/medium_vae64/manifold_latent2.png
+[saved] outputs/comp3710-keras-demo/results/medium_vae64/latent_scatter_latent2.png

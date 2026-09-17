@@ -5,15 +5,29 @@ PyTorch / NumPy implementations of every task in the *Pattern Recognition* demon
 ResNet-18 on CIFAR-10) and the recognition problems on the pre-processed OASIS brain MRI dataset
 (VAE, UNet segmentation, DCGAN).
 
+## Current review: Medium track (VAE + UNet)
+
+See [rubric audit (Chinese)](docs/RUBRIC_AUDIT_zh.md) and
+[real OASIS results and reproduction commands](docs/MEDIUM_RESULTS_zh.md).
+The original CPU results for Parts 1-3.1 below are historical repository evidence, not reruns from this review.
+The new VAE is trained; the new UNet achieves test DSC **0.9982 / 0.9267 / 0.9401 / 0.9665**
+(background / CSF / grey / white matter) on all 544 test slices at **128x128**.
+This review adds full real-data auditing, local VAE/UNet runs, strict mask pairing,
+isolated output folders, categorical inference evidence and a cluster demo runner.
+The Advanced Git Course is a separate **1-mark requirement**, with completion evidence still needed.
+Medium recognition is capped at 5/7 (whole lab task maximum 13/15); this is not an awarded score.
+
+
 | Part | Task | Entry point | Status |
 |------|------|-------------|--------|
 | 1 | Square wave Fourier series, naive DFT vs FFT, PyTorch/GPU DFT timing | `part1_dft/square_wave_numpy.py`, `part1_dft/dft_torch.py` | done, verified on CPU (GPU timings: run on Rangpur) |
 | 2 | Eigenfaces (PCA via SVD) + Random Forest on LFW | `part2_eigenfaces/eigenfaces.py` | done, accuracy 0.61 |
 | 3.1 | CNN classifier on LFW (2 x conv3x3/32 + dense) | `part3_cnn/lfw_cnn.py` | done, accuracy 0.94 |
 | 3.2 | DAWNBench: ResNet-18 on CIFAR-10, mixed precision, > 94 % target | `part3_cnn/dawnbench/train_cifar10.py` | code + SLURM script ready; needs an A100 run |
-| 4.1 | VAE of OASIS brains + latent manifold (grid / UMAP) | `part4_recognition/vae/train.py` | code ready; needs the dataset + GPU |
-| 4.2 | UNet segmentation of OASIS, per-class DSC > 0.9, one-hot output | `part4_recognition/unet/train.py`, `predict.py` | code ready; needs the dataset + GPU |
-| 4.3 | DCGAN brain generation on OASIS | `part4_recognition/gan/train.py` | code ready; needs the dataset + GPU |
+| 4.1 | Advanced Git Course | course completion proof | not yet supplied |
+| 4.4 / Task 1 | VAE of OASIS brains + latent manifold (grid / UMAP) | `part4_recognition/vae/train.py` | trained on all supplied, official-verified PNGs; see Medium report |
+| 4.4 / Task 2 | UNet segmentation of OASIS, per-class DSC > 0.9, one-hot output | `part4_recognition/unet/train.py`, `predict.py` | trained on all supplied, official-verified PNGs; see Medium report |
+| 4.4 / Task 3 | DCGAN brain generation on OASIS | `part4_recognition/gan/train.py` | code ready; needs the dataset + GPU |
 
 Everything is written from scratch (no pre-trained / pre-built models). All scripts are plain
 `argparse` programs that pick the best device automatically (CUDA on Rangpur, Apple MPS on a Mac,
@@ -27,7 +41,7 @@ Convenience scripts:
 
 ```bash
 bash scripts/run_cpu_parts.sh          # Parts 1, 2, 3.1 on CPU
-bash scripts/run_oasis_local.sh        # Part 4 against ~/Downloads/keras_png_slices_data (Mac / local GPU)
+bash scripts/run_oasis_local.sh        # Medium: VAE + UNet against local OASIS; RUN_GAN=1 opts into Hard
 ```
 
 ---
@@ -96,7 +110,10 @@ build it (odd bins 1, 3, ..., 99 Hz with amplitude `4/(pi*n)`, error ~1e-16, eve
 signal is periodic inside the window (`endpoint=False`) and band-limited below Nyquist, so there
 is no leakage. The *ideal* `np.sign` square wave differs slightly: its spectrum has infinitely many
 harmonics, those above the Nyquist frequency (1024 Hz) **alias** back onto lower bins, so the
-recovered amplitudes deviate by ~1e-6 and small non-zero even bins appear (`dft_spectrum_ideal.png`).
+recovered odd-harmonic amplitudes differ from the continuous-series coefficients. Small even bins
+in the `np.sign` construction also depend on how discontinuity samples are represented (`sign(0)`
+and floating-point `sin(pi)`). With even N, aliasing of odd harmonics alone does not create even bins
+(`dft_spectrum_ideal.png`).
 
 ![spectrum](docs/figures/dft_spectrum_reconstructed.png)
 
@@ -109,9 +126,9 @@ recovered amplitudes deviate by ~1e-6 and small non-zero even bins appear (`dft_
 | 2048 | 2.2 s  | 35 ms   | 19 us | fill in |
 | 4096 | (skipped) | 172 ms | 33 us | fill in |
 
-Fastest to slowest: **FFT < torch GPU DFT < torch CPU DFT << Python loop DFT** (the GPU column
-typically lands between the FFT and the CPU tensor version for N up to a few thousand, and the gap to
-the CPU version widens with N). Why:
+The recorded CPU order is **FFT < torch CPU DFT < Python loop DFT**.
+The GPU order is not measured here: use the order printed by the actual benchmark at each N.
+Performance depends on hardware, dtype, warmup and synchronisation. Reasons for timing differences:
 
 * the FFT is a different *algorithm*: O(N log N) instead of O(N^2) - for N = 4096 that is ~340x
   fewer operations, and NumPy's pocketfft is compiled and cache-friendly;
@@ -119,7 +136,7 @@ the CPU version widens with N). Why:
   (`cos/sin(2*pi*k*n/N) @ x`), executed by optimised BLAS kernels (CPU) or thousands of CUDA cores in
   parallel (GPU). The GPU wins over the CPU version once N is large enough that the arithmetic
   outweighs the fixed kernel-launch / synchronisation overhead (tens of microseconds per call), which
-  is why for tiny N the GPU can even be *slower* than the CPU and is never faster than the FFT;
+  is why for tiny N the GPU can even be *slower* than the CPU and measured rankings may change with device and N;
 * the pure-Python double loop executes ~N^2 interpreted iterations, each creating Python objects and
   calling `np.exp` on a scalar - interpreter overhead of ~0.5 us per iteration dominates completely.
 
@@ -172,7 +189,7 @@ hierarchical features end-to-end instead of a fixed linear projection chosen for
 
 ```bash
 sbatch slurm/dawnbench.slurm                     # full run on an A100 (30 epochs)
-sbatch slurm/dawnbench.slurm --epochs 1          # single epoch of training (demo requirement)
+sbatch slurm/dawnbench.slurm --epochs 1 --output_dir results/dawnbench_demo  # isolated one-epoch run
 python part3_cnn/dawnbench/train_cifar10.py --eval_only --checkpoint results/part3_dawnbench/resnet18_cifar10.pt
 ```
 
@@ -188,11 +205,11 @@ Design (all in `part3_cnn/dawnbench/`):
   **mixed precision** (`torch.autocast` bf16 on A100, fp16 + `GradScaler` on V100), channels-last,
   optional flip TTA, per-epoch test accuracy and timing, reports the time at which 94 % is first hit.
 
-This is the recipe of the DAWNBench "cifar10-fast" entries (Page, 2018) applied to a standard
-ResNet-18; expected outcome on an A100 is ~94-95 % in 30 epochs at roughly 6-8 s per epoch
-(mixed precision), i.e. a training time comparable to the ~360 s V100 reference. **The accuracy and
-time obtained on Rangpur must be pasted here from `results/part3_dawnbench/results.json` after the
-run** (this repository was developed on a CPU-only machine, where only a 512-image smoke test was run).
+The recipe combines common CIFAR training techniques with a standard ResNet-18.
+Neither 94% accuracy nor a particular A100 epoch time has been established by this repository.
+Use actual `results.json` values after a Rangpur run. Both pure training time and elapsed time
+including evaluation are reported; data/model setup is outside those timers. State the timing scope
+when comparing to the 360-second reference. CPU/synthetic smoke tests are not DAWNBench evidence.
 
 | run | epochs | final test acc. | time to 94 % | total train time | GPU |
 |-----|--------|-----------------|--------------|------------------|-----|
@@ -237,21 +254,23 @@ python part4_recognition/unet/predict.py --checkpoint ... --data_root <oasis> --
 
 * `model.py` - classic UNet: 4 pooling stages of DoubleConv (3x3-BN-ReLU x2), channels 32 -> 512,
   transposed-conv up-sampling with skip concatenation, 1 x 1 output conv with **4 channels**.
-  `softmax` over the channels gives the categorical / one-hot segmentation; `argmax` the label map.
+  `softmax` gives categorical probabilities; `argmax` gives a label map.
+  `predict_one_hot` produces a hard four-channel one-hot output, also exported for selected examples.
 * `metrics.py` - soft Dice loss (per class, averaged, so the small CSF class is not drowned by the
   background) and a `DiceAccumulator` that aggregates |P ∩ G|, |P|, |G| over the whole split so the
   reported per-class DSC is well defined even for slices missing a tissue.
 * `train.py` - cross-entropy + Dice loss, Adam 1e-3 with cosine decay, optional flip / intensity
-  augmentation and mixed precision, best checkpoint chosen on **validation** mean DSC, final
+  augmentation and mixed precision, best checkpoint chosen on the weakest **validation** class DSC (mean breaks ties), final
   evaluation on the untouched **test** split with a table of per-class DSC (dataset-level and
   per-image mean) and `predictions_test.png` (MRI | ground truth | prediction | error map).
 * `predict.py` - the inference script used live in the demo (timing + per-class DSC + figures).
 
-Paste the test-set table from `results/part4_unet/dice_test.json` here after training:
+Current Medium model on the full 544-image test split, evaluated at 128x128;
+see `docs/results/medium_unet_test.json` for checkpoint identity and timing:
 
 | class | background | CSF | grey matter | white matter | mean |
 |-------|-----------|-----|-------------|--------------|------|
-| test DSC | fill in | fill in | fill in | fill in | fill in |
+| test DSC (128x128) | 0.9982 | 0.9267 | 0.9401 | 0.9665 | 0.9579 |
 
 ### 5.3 Task 3 - DCGAN brain generation
 
@@ -264,16 +283,15 @@ normalised discriminator (SN-DCGAN), non-saturating BCE loss, Adam(2e-4, beta1 =
 label smoothing (real = 0.9). Evidence of training saved to `results/part4_gan/`: a fixed-noise
 sample grid per epoch (`samples/`), `losses.png` (losses + D(x), D(G(z))), `evolution.png`,
 `final_samples.png` and `diversity.json` - the ratio of mean pairwise distance among generated images
-to that among real images (a value near 1 indicates no **mode collapse**; collapsed generators give
-values << 1), plus the mean distance to the nearest training slice (memorisation check).
+to that among real images (a small value can flag **mode collapse**, but a value near 1 cannot rule it out), plus the mean distance to the nearest slice in a small sampled training batch. This diagnostic alone
+cannot establish realism, diversity, or absence of memorisation.
 
 ---
 
 ## 6. Rangpur / SLURM
 
-`slurm/*.slurm` are ready-to-submit job scripts (A100 partition, 1 GPU). Edit the environment
-activation line for your own conda/venv, then `sbatch slurm/<job>.slurm [extra args]`. Logs go to
-`logs/`. `bash slurm/interactive_gpu.sh` opens an interactive GPU shell for the live inference /
+`slurm/*.slurm` are templates (A100 partition, 1 GPU); verify partition names with `sinfo`. Edit the environment
+activation line for your own conda/venv, then `sbatch slurm/<job>.slurm [extra args]`. SLURM logs go to the submission directory (`<jobname>_<jobid>.out`), which exists before job launch. `bash slurm/interactive_gpu.sh` opens an interactive GPU shell for the live inference /
 single-epoch demonstration.
 
 ## 7. Workflow, AI use and references

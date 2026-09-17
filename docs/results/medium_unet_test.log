@@ -1,0 +1,22 @@
+device: cpu  checkpoint: results/medium_unet128_refine/unet_best.pt (epoch 5, val mean DSC 0.9575)
+
+loading test images:   0%|          | 0/544 [00:00<?, ?img/s]
+loading test images:  31%|███       | 169/544 [00:00<00:00, 1681.44img/s]
+loading test images:  62%|██████▏   | 338/544 [00:00<00:00, 1576.58img/s]
+loading test images:  98%|█████████▊| 531/544 [00:00<00:00, 1728.75img/s]
+                                                                         
+
+loading test masks:   0%|          | 0/544 [00:00<?, ?img/s]
+loading test masks:  92%|█████████▏| 500/544 [00:00<00:00, 4997.90img/s]
+                                                                        
+inference on 544 test slices took 4.6s
+
+class           DSC (dataset)  DSC (per-image mean)   > 0.9
+background             0.9982                0.9982     yes
+CSF                    0.9267                0.9119     yes
+grey matter            0.9401                0.9394     yes
+white matter           0.9665                0.9659     yes
+mean                   0.9579                0.9539
+pixel accuracy: 0.9841
+[saved] results/medium_unet_test/predictions_test.png
+[saved] results/medium_unet_test/dice_test.json

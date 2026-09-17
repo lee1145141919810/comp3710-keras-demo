@@ -1,0 +1,13 @@
+{
+  "source": "Lab 2 v2.01 PDF Preprocessed OASIS hyperlink (AARNet FileSender)",
+  "official_archive_sha256": "8bf4d3076fb5f71c105441258e9bc3fa0e311243d1a6970b7185fdc3d7035a17",
+  "comparison": "SHA-256 per PNG against the archive downloaded from the course PDF link",
+  "file_counts": {
+    "identical": 22656
+  },
+  "different_examples": [],
+  "official_slice0_background_pattern_count": 1,
+  "provided_slice0_background_pattern_count": 1,
+  "sha256_checked": 22656,
+  "sha256_mismatches": []
+}

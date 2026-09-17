@@ -1,0 +1,24 @@
+{
+  "dsc_per_class": {
+    "background": 0.9982002377510071,
+    "CSF": 0.9267141819000244,
+    "grey matter": 0.9400670528411865,
+    "white matter": 0.9665065407752991
+  },
+  "dsc_per_image_mean": {
+    "background": 0.9982044100761414,
+    "CSF": 0.9119305610656738,
+    "grey matter": 0.9393922090530396,
+    "white matter": 0.9659138917922974
+  },
+  "pixel_accuracy": 0.9841317569508272,
+  "n_slices": 544,
+  "split": "test",
+  "image_size": 128,
+  "checkpoint": "results/medium_unet128_refine/unet_best.pt",
+  "checkpoint_sha256": "5c53b4b0bbc888934901b8f5c2fe9c72e6728e4429d09f5d64dac3808721c1ec",
+  "device": "cpu",
+  "inference_seconds": 4.64010214805603,
+  "all_labels_above_0_9": true,
+  "max_samples": null
+}
