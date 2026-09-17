@@ -4,7 +4,22 @@
 
 你已经有UQ账号，但尚未连接Rangpur。实验PDF指定的入口是：
 [EAIT Compute 官方说明](https://student.eait.uq.edu.au/infrastructure/compute/)。
-该页面需要UQ登录。登录后核对登录主机、用户名格式，以及校外访问是否要求VPN或跳板机；不要从GPU计算节点名称猜测登录主机。
+已依据用户贴出的官方说明确认：登录节点是 `rangpur.compute.eait.uq.edu.au`，只接受校内网络SSH连接；校外可通过 `remote.labs.eait.uq.edu.au` 跳转或使用学校规定的VPN。
+
+Mac终端命令（将两处 `YOUR_UQ_USERNAME` 替换为你的UQ登录用户名）：
+
+```bash
+# 校外或希望使用跳板机时：
+ssh -J YOUR_UQ_USERNAME@remote.labs.eait.uq.edu.au YOUR_UQ_USERNAME@rangpur.compute.eait.uq.edu.au
+
+# 已在校内网络、可以直连时：
+ssh YOUR_UQ_USERNAME@rangpur.compute.eait.uq.edu.au
+```
+
+官方提供的Rangpur主机指纹：`SHA256:yEOt0cJWMOC5rlpiEtzKO+kJ+EZHB1lvuTVXIT62bUw`。
+这个指纹仅用于Rangpur，不适用于跳板机。跳板机首次连接的指纹须按学校的远程访问说明核对。
+
+官方区分 `a100-test`（最长20分钟，`--gres=shard:N`，每GPU共4个shard）与 `a100`（`--gres=gpu:1`）。本项目的交互脚本在测试分区请求全部4个shard以容纳ML负载；正式DAWNBench训练使用 `a100`。登录后仍用 `sinfo` 核对即时可用情况。
 
 在Mac上使用系统“终端”执行文档中的SSH命令。密码输入时通常不会显示字符。首次连接出现主机指纹时，应与官方说明或IT提供的信息核对。不要通过关闭主机验证来绕过指纹不匹配。
 
