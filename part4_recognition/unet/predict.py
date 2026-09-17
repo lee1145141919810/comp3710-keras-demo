@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.colors import ListedColormap  # noqa: E402
 from torch.utils.data import DataLoader  # noqa: E402
 
-from common import RESULTS_DIR, ensure_dir, get_device, save_figure, synchronize  # noqa: E402
+from common import RESULTS_DIR, ensure_dir, get_device, load_checkpoint, save_figure, synchronize  # noqa: E402
 from common.device import describe_device  # noqa: E402
 from part4_recognition.oasis_data import CLASS_NAMES, N_CLASSES, OASISDataset  # noqa: E402
 from part4_recognition.unet.metrics import DiceAccumulator  # noqa: E402
@@ -35,7 +35,7 @@ LABEL_CMAP = ListedColormap(["black", "#1f77b4", "#ff7f0e", "#fefefe"])  # backg
 
 
 def load_model(checkpoint: str | Path, device: torch.device) -> tuple[UNet, dict]:
-    ckpt = torch.load(checkpoint, map_location=device)
+    ckpt = load_checkpoint(checkpoint, map_location=device)
     model = UNet(1, N_CLASSES, ckpt["base_channels"], ckpt["depth"]).to(device)
     model.load_state_dict(ckpt["state_dict"])
     model.eval()

@@ -22,6 +22,8 @@ import torchvision
 CIFAR10_MEAN = (0.4914, 0.4822, 0.4465)
 CIFAR10_STD = (0.2470, 0.2435, 0.2616)
 CIFAR10_CLASSES = ("airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck")
+# The official Toronto URL 301s here; pinning the destination avoids a slow extra hop.
+CIFAR10_URL = "https://cave.cs.toronto.edu/kriz/cifar-10-python.tar.gz"
 
 
 def _to_tensor(images_uint8: np.ndarray, pad: int = 0) -> torch.Tensor:
@@ -47,6 +49,7 @@ def load_cifar10(
 
     ``subset`` keeps only the first N training / test images (handy for CPU smoke tests).
     """
+    torchvision.datasets.CIFAR10.url = CIFAR10_URL
     train = torchvision.datasets.CIFAR10(str(root), train=True, download=download)
     test = torchvision.datasets.CIFAR10(str(root), train=False, download=download)
     train_data, train_targets = train.data, np.asarray(train.targets)

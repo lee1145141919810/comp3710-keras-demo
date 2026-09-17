@@ -19,9 +19,23 @@ Everything is written from scratch (no pre-trained / pre-built models). All scri
 `argparse` programs that pick the best device automatically (CUDA on Rangpur, Apple MPS on a Mac,
 otherwise CPU) and write figures, metrics (`*.json`) and checkpoints under `results/<part>/`.
 
+Verified CPU numbers for Parts 1-3.1 (this development machine, no GPU) live in
+[`docs/results/verified_cpu_results.json`](docs/results/verified_cpu_results.json): DFT/FFT timings,
+eigenfaces compactness + 0.612 RF accuracy, LFW CNN 0.941.
+
+Convenience scripts:
+
+```bash
+bash scripts/run_cpu_parts.sh          # Parts 1, 2, 3.1 on CPU
+bash scripts/run_oasis_local.sh        # Part 4 against ~/Downloads/keras_png_slices_data (Mac / local GPU)
+```
+
 ---
 
 ## 1. Setup
+
+The lab sheet requires a GitHub repository **under your own account** (the demonstrator may ask you
+to log in). After creating the GitHub repo, add it as `origin` and push `main`.
 
 ```bash
 git clone <this repository> && cd <repo>
@@ -46,15 +60,16 @@ Datasets:
 Repository layout:
 
 ```
-common/                 device selection, seeding, plotting helpers shared by all parts
+common/                 device selection, seeding, plotting, checkpoint I/O
 part1_dft/              Fourier series + DFT (NumPy and PyTorch versions, GPU timing study)
 part2_eigenfaces/       PCA eigenfaces + random forest
 part3_cnn/lfw_cnn.py    small CNN for LFW
 part3_cnn/dawnbench/    ResNet-18, GPU-resident CIFAR-10 pipeline, fast trainer
 part4_recognition/      oasis_data.py (dataset) + vae/ unet/ gan/ (model, train, visualise/predict)
 slurm/                  sbatch scripts for Rangpur (+ interactive GPU shell for the live demo)
+scripts/                local runners for CPU parts and a Mac/local OASIS training pass
 tests/                  fast unit tests (DFT correctness, Dice metric, model shapes, label encoding)
-docs/                   figures, demo guide (Chinese), AI-usage statement
+docs/                   figures, demo guide (Chinese), AI-usage statement, verified CPU results
 results/                created at run time (git-ignored)
 ```
 

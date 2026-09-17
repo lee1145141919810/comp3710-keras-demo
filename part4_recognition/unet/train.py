@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # make `common` im
 
 from torch.utils.data import DataLoader  # noqa: E402
 
-from common import RESULTS_DIR, ensure_dir, get_device, set_seed  # noqa: E402
+from common import RESULTS_DIR, ensure_dir, get_device, load_checkpoint, set_seed  # noqa: E402
 from common.device import describe_device  # noqa: E402
 from common.plotting import plot_curves  # noqa: E402
 from part4_recognition.oasis_data import CLASS_NAMES, N_CLASSES, OASISDataset, labels_to_one_hot  # noqa: E402
@@ -131,7 +131,7 @@ def main() -> None:
     plot_curves(val_curves, OUT_DIR / "val_dice.png", "epoch", "DSC", "Validation Dice per class")
 
     # -- final test evaluation with the best checkpoint ---------------------------------------
-    model.load_state_dict(torch.load(ckpt_path, map_location=device)["state_dict"])
+    model.load_state_dict(load_checkpoint(ckpt_path, map_location=device)["state_dict"])
     test_acc = evaluate_dataset(model, test_loader, device)
     print("\nTest set results (best checkpoint):")
     print(format_dice_table(test_acc))

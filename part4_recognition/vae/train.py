@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # make `common` im
 
 from torch.utils.data import DataLoader  # noqa: E402
 
-from common import RESULTS_DIR, ensure_dir, get_device, set_seed  # noqa: E402
+from common import RESULTS_DIR, ensure_dir, get_device, load_checkpoint, set_seed  # noqa: E402
 from common.device import describe_device  # noqa: E402
 from common.plotting import plot_curves  # noqa: E402
 from part4_recognition.oasis_data import OASISDataset  # noqa: E402
@@ -111,7 +111,7 @@ def main() -> None:
     with open(OUT_DIR / f"history_{tag}.json", "w") as f:
         json.dump({"history": history, "args": vars(args), "best_val_loss": best_val}, f, indent=2)
 
-    model.load_state_dict(torch.load(ckpt_path, map_location=device)["state_dict"])
+    model.load_state_dict(load_checkpoint(ckpt_path, map_location=device)["state_dict"])
     make_all_figures(model, test_ds, device, OUT_DIR, tag)
 
 

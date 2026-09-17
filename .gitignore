@@ -7,14 +7,14 @@ venv/
 .ipynb_checkpoints/
 
 # Data, checkpoints and generated outputs (too large / reproducible)
-data/
-results/
-checkpoints/
+/data/
+/results/
+/checkpoints/
 *.pt
 *.pth
 *.ckpt
 *.npz
-logs/
+/logs/
 slurm-*.out
 
 # Uploaded task sheets (kept out of version control)

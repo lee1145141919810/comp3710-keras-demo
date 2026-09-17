@@ -104,3 +104,35 @@ def test_gan_shapes():
     fake = g(torch.randn(4, 16))
     assert fake.shape == (4, 1, 64, 64) and fake.min() >= -1 and fake.max() <= 1
     assert d(fake).shape == (4,)
+
+
+def test_checkpoint_roundtrip_mixed_dict(tmp_path):
+    """PyTorch >= 2.6 refuses non-tensor objects unless weights_only=False."""
+    from common.checkpoint import load_checkpoint, save_checkpoint
+
+    payload = {"state_dict": {"w": torch.tensor([1.0, 2.0])}, "image_size": 128, "tag": "vae"}
+    path = tmp_path / "ckpt.pt"
+    save_checkpoint(payload, path)
+    loaded = load_checkpoint(path)
+    assert loaded["image_size"] == 128 and loaded["tag"] == "vae"
+    assert torch.equal(loaded["state_dict"]["w"], payload["state_dict"]["w"])
+
+
+def test_oasis_mask_pairing_same_name_and_seg_prefix(tmp_path):
+    from PIL import Image
+    from part4_recognition.oasis_data import OASISDataset
+
+    root = tmp_path / "keras_png_slices_data"
+    img_dir = root / "keras_png_slices_train"
+    seg_dir = root / "keras_png_slices_seg_train"
+    img_dir.mkdir(parents=True)
+    seg_dir.mkdir(parents=True)
+    arr = np.zeros((8, 8), dtype=np.uint8)
+    Image.fromarray(arr).save(img_dir / "case_001_slice_0.nii.png")
+    Image.fromarray(arr).save(seg_dir / "seg_001_slice_0.nii.png")
+    Image.fromarray(arr).save(img_dir / "other_002_slice_1.nii.png")
+    Image.fromarray(arr).save(seg_dir / "other_002_slice_1.nii.png")  # identical filename
+    ds = OASISDataset(root, "train", image_size=8, with_masks=True)
+    assert len(ds) == 2
+    img, mask = ds[0]
+    assert img.shape == (1, 8, 8) and mask.shape == (8, 8)

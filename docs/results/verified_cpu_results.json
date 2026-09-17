@@ -1,0 +1,31 @@
+{
+  "part1_dft": {
+    "machine": "4-core CPU, no GPU (development environment)",
+    "naive_dft_matches_numpy_fft": true,
+    "timings_seconds": {
+      "N=256": {"numpy_naive_loop": 0.031257, "torch_naive_cpu": 0.000244, "numpy_fft": 0.000006},
+      "N=1024": {"numpy_naive_loop": 0.520183, "torch_naive_cpu": 0.011033, "numpy_fft": 0.000011},
+      "N=2048": {"numpy_naive_loop": 2.216122, "torch_naive_cpu": 0.034736, "numpy_fft": 0.000019},
+      "N=4096": {"numpy_naive_loop": null, "torch_naive_cpu": 0.172158, "numpy_fft": 0.000033}
+    },
+    "order_fastest_to_slowest_cpu": ["numpy_fft", "torch_naive_cpu", "numpy_naive_loop"],
+    "reconstruction_mean_abs_error": {"N=1": 0.3426, "N=3": 0.1629, "N=5": 0.1109, "N=20": 0.0364, "N=50": 0.0166},
+    "gibbs_overshoot_percent": {"N=1": 27.3, "N=50": 17.8}
+  },
+  "part2_eigenfaces": {
+    "n_samples": 1288,
+    "n_classes": 7,
+    "n_components": 150,
+    "variance_explained_percent": {"10": 63.1, "50": 84.7, "100": 91.6, "150": 94.7},
+    "random_forest_test_accuracy": 0.6118,
+    "correct": 197,
+    "test_size": 322
+  },
+  "part3_1_lfw_cnn": {
+    "architecture": "Conv3x3(32)-BN-ReLU-MaxPool x2, FC(128)-Dropout, FC(7)",
+    "epochs": 40,
+    "test_accuracy": 0.9410,
+    "macro_f1": 0.90,
+    "training_time_cpu_s": 15.7
+  }
+}

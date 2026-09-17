@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # make `common` im
 import matplotlib.pyplot as plt  # noqa: E402
 from torch.utils.data import DataLoader  # noqa: E402
 
-from common import RESULTS_DIR, get_device, save_figure  # noqa: E402
+from common import RESULTS_DIR, get_device, load_checkpoint, save_figure  # noqa: E402
 from part4_recognition.oasis_data import OASISDataset  # noqa: E402
 from part4_recognition.vae.model import ConvVAE  # noqa: E402
 
@@ -184,7 +184,7 @@ def main() -> None:
     args = parser.parse_args()
 
     device = get_device(args.device)
-    ckpt = torch.load(args.checkpoint, map_location=device)
+    ckpt = load_checkpoint(args.checkpoint, map_location=device)
     model = ConvVAE(image_size=ckpt["image_size"], latent_dim=ckpt["latent_dim"], base_channels=ckpt["base_channels"]).to(device)
     model.load_state_dict(ckpt["state_dict"])
     ds = OASISDataset(args.data_root, args.split, image_size=ckpt["image_size"])

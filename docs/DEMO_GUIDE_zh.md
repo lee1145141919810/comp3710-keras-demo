@@ -21,7 +21,14 @@
    - `sbatch slurm/vae.slurm`（Task 1，latent 2），可再跑一次 `--latent_dim 32 --epochs 30` 得到 UMAP 图。
    - `sbatch slurm/gan.slurm`（Task 3），检查 `results/part4_gan/final_samples.png` 是否像脑子、`diversity.json` 的 `fake_over_real_ratio` 是否接近 1。
    - 把关键图复制到 `docs/figures/` 并在 README 中引用，`git commit` + `git push`。
-2. **本地数据路径**：Mac 上数据在 `~/Downloads/keras_png_slices_data`，脚本会自动搜索该路径，也可 `--data_root` 指定。Mac 会自动用 MPS 加速。
+2. **本地数据路径**：Mac 上数据在 `~/Downloads/keras_png_slices_data`，脚本会自动搜索该路径，也可 `--data_root` 指定。Mac 会自动用 MPS 加速。一键训练：
+   ```bash
+   bash scripts/run_oasis_local.sh
+   ```
+   CPU 部分（1 / 2 / 3.1）一键复现：
+   ```bash
+   bash scripts/run_cpu_parts.sh
+   ```
 3. **edX 短课程** "Version Control for Teams using Git"（Part 4.1，1 分）完成并保留证书截图。
 4. **GitHub**：仓库必须在自己的账号下，commit 信息有意义（本仓库已按"每个 Part 一个 commit"组织，后续修改也保持这个习惯）。演示时可能要求登录账号证明所有权。
 5. **AI 使用证据**：导出与 AI 的对话记录（分享链接或 `prompt_history.pdf`）。rubric 明确说"把题目复制给 AI 再复制答案"不算合理使用，要能说明你如何**迭代提示、验证并改进**了 AI 生成的代码（见 `docs/AI_USAGE.md`）。

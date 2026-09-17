@@ -134,21 +134,39 @@ class OASISDataset(Dataset):
         self.images = self._load_stack(self.image_files, Image.BILINEAR, f"{split} images")
         self.masks: np.ndarray | None = None
         if with_masks:
-            mask_files = [self._matching_mask(p, seg_dir) for p in self.image_files]
+            mask_files = self._resolve_masks(self.image_files, seg_dir)
             raw = self._load_stack(mask_files, Image.NEAREST, f"{split} masks")
             self.masks = grey_levels_to_labels(raw).astype(np.uint8)
 
     # -- loading helpers ----------------------------------------------------------------------
     @staticmethod
     def _matching_mask(image_path: Path, seg_dir: Path) -> Path:
-        """``case_001_slice_0.nii.png`` -> ``seg_001_slice_0.nii.png`` in the segmentation folder."""
-        candidate = seg_dir / image_path.name.replace("case_", "seg_", 1)
-        if candidate.exists():
-            return candidate
+        """Match a segmentation PNG to an image PNG.
+
+        The official ``keras_png_slices_data`` archive uses ``case_XXX_slice_Y.nii.png`` next to
+        ``seg_XXX_slice_Y.nii.png``. Some copies keep the same filename in both folders.
+        """
+        same = seg_dir / image_path.name
+        if same.exists():
+            return same
+        swapped = seg_dir / image_path.name.replace("case_", "seg_", 1)
+        if swapped.exists():
+            return swapped
         matches = sorted(seg_dir.glob(f"*{'_'.join(image_path.stem.split('_')[1:])}*"))
         if matches:
             return matches[0]
         raise FileNotFoundError(f"no segmentation mask for {image_path.name} in {seg_dir}")
+
+    @classmethod
+    def _resolve_masks(cls, image_files: list[Path], seg_dir: Path) -> list[Path]:
+        """Name-based pairing, falling back to sorted zip (the original Keras loader's strategy)."""
+        try:
+            return [cls._matching_mask(p, seg_dir) for p in image_files]
+        except FileNotFoundError:
+            seg_files = sorted(p for p in seg_dir.iterdir() if p.suffix.lower() == ".png")[: len(image_files)]
+            if len(seg_files) != len(image_files):
+                raise
+            return seg_files
 
     def _load_stack(self, files: list[Path], resample: int, desc: str) -> np.ndarray:
         out = np.empty((len(files), self.image_size, self.image_size), dtype=np.uint8)

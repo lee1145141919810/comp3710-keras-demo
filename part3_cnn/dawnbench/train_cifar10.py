@@ -31,7 +31,7 @@ import torch.nn.functional as F
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # make `common` importable
 
-from common import RESULTS_DIR, ensure_dir, get_device, set_seed, synchronize  # noqa: E402
+from common import RESULTS_DIR, ensure_dir, get_device, load_checkpoint, set_seed, synchronize  # noqa: E402
 from common.device import describe_device  # noqa: E402
 from common.paths import DATA_DIR  # noqa: E402
 from common.plotting import plot_curves  # noqa: E402
@@ -80,7 +80,7 @@ def evaluate(model: nn.Module, x: torch.Tensor, y: torch.Tensor, batch_size: int
     correct, loss_sum = 0, 0.0
     for i in range(0, len(x), batch_size):
         xb, yb = x[i : i + batch_size], y[i : i + batch_size]
-        xb = xb.contiguous(memory_format=torch.channels_last)
+        xb = xb.contiguous(memory_format=torch.channels_last) if x.device.type == "cuda" else xb
         with torch.autocast(device_type=x.device.type, dtype=amp_dtype, enabled=amp_dtype is not None):
             logits = model(xb)
             if tta:
@@ -131,9 +131,11 @@ def main() -> None:
     print(f"data on device: train {tuple(data['train_x'].shape)}  test {tuple(data['test_x'].shape)}  ({time.time() - t0:.1f}s)")
 
     # -- model --------------------------------------------------------------------------------
-    model = resnet18(num_classes=10).to(device).to(memory_format=torch.channels_last)
+    model = resnet18(num_classes=10).to(device)
+    if device.type == "cuda":  # channels-last is a CUDA-only win; MPS/CPU ignore or slow down
+        model = model.to(memory_format=torch.channels_last)
     if args.checkpoint:
-        model.load_state_dict(torch.load(args.checkpoint, map_location=device))
+        model.load_state_dict(load_checkpoint(args.checkpoint, map_location=device))
         print(f"loaded weights from {args.checkpoint}")
     print(f"ResNet-18 parameters: {sum(p.numel() for p in model.parameters()):,}")
     if args.compile:
@@ -170,7 +172,7 @@ def main() -> None:
 
         for i in range(0, n_train, args.batch_size):
             idx = perm[i : i + args.batch_size]
-            xb = x_aug[idx].contiguous(memory_format=torch.channels_last)
+            xb = x_aug[idx].contiguous(memory_format=torch.channels_last) if device.type == "cuda" else x_aug[idx]
             yb = data["train_y"][idx]
 
             lr = piecewise_linear_lr(step, total_steps, warmup_steps, args.peak_lr)
