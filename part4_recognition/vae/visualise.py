@@ -190,6 +190,7 @@ def main() -> None:
     parser.add_argument("--data_root", default=None)
     parser.add_argument("--split", default="test", choices=["train", "validate", "test"])
     parser.add_argument("--device", default=None)
+    parser.add_argument("--output_dir", type=Path, default=OUT_DIR)
     args = parser.parse_args()
 
     device = get_device(args.device)
@@ -197,7 +198,7 @@ def main() -> None:
     model = ConvVAE(image_size=ckpt["image_size"], latent_dim=ckpt["latent_dim"], base_channels=ckpt["base_channels"]).to(device)
     model.load_state_dict(ckpt["state_dict"])
     ds = OASISDataset(args.data_root, args.split, image_size=ckpt["image_size"])
-    make_all_figures(model, ds, device, OUT_DIR, tag=f"latent{ckpt['latent_dim']}")
+    make_all_figures(model, ds, device, args.output_dir, tag=f"latent{ckpt['latent_dim']}")
 
 
 if __name__ == "__main__":

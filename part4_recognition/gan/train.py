@@ -41,13 +41,26 @@ def to_unit(x: torch.Tensor) -> torch.Tensor:
     return (x.clamp(-1, 1) + 1) / 2
 
 
+def spatial_moment_loss(fake: torch.Tensor, real: torch.Tensor) -> torch.Tensor:
+    """Match coarse spatial mean and variability; an experimental anti-collapse term.
+
+    Pooling limits the incentive to add high-frequency noise. This is a training
+    regularizer, not a perceptual-quality metric or a guarantee against collapse.
+    """
+    f = F.adaptive_avg_pool2d(fake, (16, 16))
+    r = F.adaptive_avg_pool2d(real.detach(), (16, 16))
+    return F.l1_loss(f.mean(0), r.mean(0)) + F.l1_loss(
+        f.std(0, correction=0), r.std(0, correction=0)
+    )
+
+
 @torch.no_grad()
 def diversity_stats(fake: torch.Tensor, real: torch.Tensor) -> dict[str, float]:
     """Mean pairwise L2 distance within a batch of generated vs real images.
 
-    A collapsed generator produces near-identical images -> tiny within-fake distances. Healthy
-    training gives a fake/real ratio close to 1. Also reports the mean distance of each fake image to
-    its nearest real neighbour (large -> the generator is not simply memorising training slices).
+    Small within-fake distances can indicate collapse. A ratio near 1 does not
+    establish image quality. Nearest neighbours are only from this small real
+    batch; their distances cannot establish absence of training-set memorisation.
     """
     f, r = fake.flatten(1).float().cpu(), real.flatten(1).float().cpu()  # tiny: 64 x pixels
     d_ff, d_rr = torch.cdist(f, f), torch.cdist(r, r)
@@ -98,6 +111,7 @@ def plot_evolution(snapshots: list[tuple[int, torch.Tensor]], path: Path, n_show
 
 
 def main() -> None:
+    global OUT_DIR
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--data_root", default=None, help="folder containing keras_png_slices_train/ ...")
     parser.add_argument("--image_size", type=int, default=128, help="64 trains much faster; 128 looks better")
@@ -114,7 +128,12 @@ def main() -> None:
     parser.add_argument("--max_samples", type=int, default=None, help="limit training slices (smoke tests)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default=None)
+    parser.add_argument("--output_dir", type=Path, default=OUT_DIR)
+    parser.add_argument("--moment_weight", type=float, default=0.0,
+                        help="experimental coarse spatial moment regularization; 0 keeps baseline")
     args = parser.parse_args()
+    OUT_DIR = args.output_dir
+    args.output_dir = str(args.output_dir)
 
     set_seed(args.seed)
     sample_dir = ensure_dir(OUT_DIR / "samples")
@@ -124,6 +143,8 @@ def main() -> None:
     # Unsupervised: only the images are used, no masks.
     train_ds = OASISDataset(args.data_root, "train", args.image_size, normalise="signed", max_samples=args.max_samples)
     loader = DataLoader(train_ds, args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=device.type == "cuda", drop_last=True)
+    if not len(loader):
+        raise ValueError("Training requires at least batch_size images; lower --batch_size")
     print(f"{len(train_ds)} training slices at {args.image_size}x{args.image_size}, {len(loader)} steps per epoch")
 
     G = Generator(args.latent_dim, args.image_size, args.base_channels).to(device)
@@ -158,11 +179,15 @@ def main() -> None:
             opt_d.step()
 
             # -- generator: non-saturating loss, wants D(G(z)) -> 1 ------------------------------
+            D.requires_grad_(False)
             logits_fake = D(fake)
             loss_g = F.binary_cross_entropy_with_logits(logits_fake, torch.ones_like(logits_fake))
+            if args.moment_weight:
+                loss_g = loss_g + args.moment_weight * spatial_moment_loss(fake, real)
             opt_g.zero_grad(set_to_none=True)
             loss_g.backward()
             opt_g.step()
+            D.requires_grad_(True)
 
             sums += np.array([loss_d.item(), loss_g.item(), torch.sigmoid(logits_real).mean().item(), torch.sigmoid(logits_fake).mean().item()])
 
@@ -177,7 +202,10 @@ def main() -> None:
         save_image(samples, sample_dir / f"epoch_{epoch:03d}.png", nrow=8)
         if epoch == 1 or epoch % args.snapshot_every == 0 or epoch == args.epochs:
             snapshots.append((epoch, samples))
-        torch.save({"generator": G.state_dict(), "discriminator": D.state_dict(), "args": vars(args), "epoch": epoch}, OUT_DIR / "dcgan.pt")
+        torch.save({"generator": G.state_dict(), "discriminator": D.state_dict(), "args": vars(args), "epoch": epoch,
+                    "optimizer_g": opt_g.state_dict(), "optimizer_d": opt_d.state_dict(), "history": history}, OUT_DIR / "dcgan.pt")
+        (OUT_DIR / "progress.json").write_text(json.dumps({"epoch": epoch, "elapsed_s": time.time() - start,
+                                                        "history": history, "args": vars(args)}, indent=2))
 
     # -- evidence of training -----------------------------------------------------------------
     plot_losses(history, OUT_DIR / "losses.png")

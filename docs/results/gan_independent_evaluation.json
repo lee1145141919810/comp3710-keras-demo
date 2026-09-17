@@ -1,0 +1,33 @@
+{
+  "evaluation_seed": 2026,
+  "reference_split": "validate",
+  "reference_count": 256,
+  "warning": "Descriptive checks only. Distance ratios do not establish perceptual quality or absence of memorisation.",
+  "validation_real": {
+    "pixel_pairwise_l2": 16.494647979736328,
+    "pooled_pairwise_l2": 1.0422099828720093,
+    "mean_pixel_std": 0.05863199383020401,
+    "foreground_area_mean": 0.3381168842315674,
+    "foreground_area_std": 0.021715540438890457
+  },
+  "gan_rtx5080": {
+    "pixel_pairwise_l2": 0.8864132761955261,
+    "pooled_pairwise_l2": 0.06420844048261642,
+    "mean_pixel_std": 0.0032720628660172224,
+    "foreground_area_mean": 0.3650200366973877,
+    "foreground_area_std": 0.001815180410631001,
+    "epoch": 60,
+    "pixel_diversity_ratio": 0.05373944792786634,
+    "pooled_diversity_ratio": 0.06160796915961001
+  },
+  "gan_diversity_v1": {
+    "pixel_pairwise_l2": 14.729146957397461,
+    "pooled_pairwise_l2": 0.9853830337524414,
+    "mean_pixel_std": 0.052354227751493454,
+    "foreground_area_mean": 0.3428361415863037,
+    "foreground_area_std": 0.02239704504609108,
+    "epoch": 60,
+    "pixel_diversity_ratio": 0.8929652197180695,
+    "pooled_diversity_ratio": 0.9454745684137755
+  }
+}

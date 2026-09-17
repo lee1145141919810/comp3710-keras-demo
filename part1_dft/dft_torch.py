@@ -206,6 +206,7 @@ def save_csv(results: dict[int, dict[str, float]]) -> None:
 
 # --------------------------------------------------------------------------------------------
 def main() -> None:
+    global OUT_DIR
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--sizes", type=int, nargs="+", default=[256, 512, 1024, 2048, 4096, 8192])
     parser.add_argument("--max_naive_n", type=int, default=2048, help="skip the pure-Python DFT above this N")
@@ -214,7 +215,9 @@ def main() -> None:
     parser.add_argument("--harmonics", type=int, default=50, help="harmonics used to build the test signal")
     parser.add_argument("--repeats", type=int, default=5, help="timed repetitions (best time is reported)")
     parser.add_argument("--device", default=None, help="force a device, e.g. cuda, mps or cpu")
+    parser.add_argument("--output_dir", type=Path, default=OUT_DIR)
     args = parser.parse_args()
+    OUT_DIR = args.output_dir
 
     device = get_device(args.device)
     # MPS has no float64 support; CUDA/CPU use float64 to match NumPy's precision.

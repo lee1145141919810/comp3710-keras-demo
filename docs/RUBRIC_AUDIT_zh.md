@@ -1,3 +1,5 @@
+> 历史文档：当前 Windows/GAN/DAWNBench 状态请先看 [CURRENT_STATUS_zh.md](CURRENT_STATUS_zh.md)。下文“未选 GAN”“尚未连接”等描述不再代表最新进度。
+
 # COMP3710 Lab 2 评分标准核对与 Medium 完成路线
 
 核对起点：GitHub `lee1145141919810/comp3710-keras-demo`，提交 `3bb2379`。

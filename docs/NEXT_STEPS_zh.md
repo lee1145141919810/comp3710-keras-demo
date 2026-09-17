@@ -1,3 +1,5 @@
+> 历史文档：当前 Windows/GAN/DAWNBench 状态请先看 [CURRENT_STATUS_zh.md](CURRENT_STATUS_zh.md)。下文“未选 GAN”“尚未连接”等描述不再代表最新进度。
+
 # 下一阶段：连接 Rangpur、完成 Git 课程、练习答辩
 
 ## 当前第一步：确认登录方法

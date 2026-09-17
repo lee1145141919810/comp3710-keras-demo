@@ -1,3 +1,5 @@
+> 历史文档：当前 Windows/GAN/DAWNBench 状态请先看 [CURRENT_STATUS_zh.md](CURRENT_STATUS_zh.md)。下文“未选 GAN”“尚未连接”等描述不再代表最新进度。
+
 # COMP3710 Lab 2：Medium 演示与答辩指南
 
 本指南对应当前实际状态，详细数值见 [Medium结果](MEDIUM_RESULTS_zh.md)，评分项见 [核对报告](RUBRIC_AUDIT_zh.md)，登录与后续操作见 [下一阶段](NEXT_STEPS_zh.md)。

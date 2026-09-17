@@ -5,29 +5,35 @@ PyTorch / NumPy implementations of every task in the *Pattern Recognition* demon
 ResNet-18 on CIFAR-10) and the recognition problems on the pre-processed OASIS brain MRI dataset
 (VAE, UNet segmentation, DCGAN).
 
-## Current review: Medium track (VAE + UNet)
+## Current review: Hard track (VAE + UNet + GAN)
 
-See [rubric audit (Chinese)](docs/RUBRIC_AUDIT_zh.md) and
-[real OASIS results and reproduction commands](docs/MEDIUM_RESULTS_zh.md).
-The original CPU results for Parts 1-3.1 below are historical repository evidence, not reruns from this review.
-The new VAE is trained; the new UNet achieves test DSC **0.9982 / 0.9267 / 0.9401 / 0.9665**
-(background / CSF / grey / white matter) on all 544 test slices at **128x128**.
-This review adds full real-data auditing, local VAE/UNet runs, strict mask pairing,
-isolated output folders, categorical inference evidence and a cluster demo runner.
-The Advanced Git Course is a separate **1-mark requirement**, with completion evidence still needed.
-Medium recognition is capped at 5/7 (whole lab task maximum 13/15); this is not an awarded score.
+See [current evidence](docs/CURRENT_STATUS_zh.md), [verified original rubric](docs/HARD_RUBRIC_VERIFIED_zh.md),
+and [GAN experiment](docs/GAN_RESULTS_zh.md). Hard recognition has a **7/7 maximum**, plus the separate
+**1-mark Git course**; these are ceilings, not awarded marks.
+
+On Windows RTX 5080, DFT timing and VAE/UNet/GAN inference have been rerun. UNet still reaches
+**0.9982 / 0.9267 / 0.9401 / 0.9665** on all 544 test slices at **128x128**.
+An OASIS GAN baseline collapsed; adding experimental coarse spatial moment regularization improved
+sample diversity after 60 epochs. Independent validation-reference distance ratio increased from
+**0.0537 to 0.8930**. This is a diversity diagnostic, not a realism score or proof of full mode coverage.
+The instructor assesses GAN realism. New training and inference examples are below.
+
+The shared conversation reports Rangpur CIFAR-10 TTA accuracy 94.00% in 91.3 seconds of training
+(99.4 seconds including evaluation); its original server artifacts still need retrieval.
+Required live Rangpur demonstration, Git course evidence and personal viva remain outstanding.
+Parts 2 and 3.1 below retain historical results, not new Windows runs.
 
 
 | Part | Task | Entry point | Status |
 |------|------|-------------|--------|
-| 1 | Square wave Fourier series, naive DFT vs FFT, PyTorch/GPU DFT timing | `part1_dft/square_wave_numpy.py`, `part1_dft/dft_torch.py` | done, verified on CPU (GPU timings: run on Rangpur) |
+| 1 | Square wave Fourier series, naive DFT vs FFT, PyTorch/GPU DFT timing | `part1_dft/square_wave_numpy.py`, `part1_dft/dft_torch.py` | CPU and RTX 5080 timings verified; see current evidence |
 | 2 | Eigenfaces (PCA via SVD) + Random Forest on LFW | `part2_eigenfaces/eigenfaces.py` | done, accuracy 0.61 |
 | 3.1 | CNN classifier on LFW (2 x conv3x3/32 + dense) | `part3_cnn/lfw_cnn.py` | done, accuracy 0.94 |
-| 3.2 | DAWNBench: ResNet-18 on CIFAR-10, mixed precision, > 94 % target | `part3_cnn/dawnbench/train_cifar10.py` | code + SLURM script ready; needs an A100 run |
+| 3.2 | DAWNBench: ResNet-18 on CIFAR-10, mixed precision, > 94 % target | `part3_cnn/dawnbench/train_cifar10.py` | A100 results reported in shared conversation; original artifacts and live demo pending |
 | 4.1 | Advanced Git Course | course completion proof | not yet supplied |
 | 4.4 / Task 1 | VAE of OASIS brains + latent manifold (grid / UMAP) | `part4_recognition/vae/train.py` | trained on all supplied, official-verified PNGs; see Medium report |
 | 4.4 / Task 2 | UNet segmentation of OASIS, per-class DSC > 0.9, one-hot output | `part4_recognition/unet/train.py`, `predict.py` | trained on all supplied, official-verified PNGs; see Medium report |
-| 4.4 / Task 3 | DCGAN brain generation on OASIS | `part4_recognition/gan/train.py` | code ready; needs the dataset + GPU |
+| 4.4 / Task 3 | DCGAN brain generation on OASIS | `part4_recognition/gan/train.py` | 60-epoch OASIS run and anti-collapse comparison completed locally; see GAN report |
 
 Everything is written from scratch (no pre-trained / pre-built models). All scripts are plain
 `argparse` programs that pick the best device automatically (CUDA on Rangpur, Apple MPS on a Mac,
@@ -307,3 +313,17 @@ single-epoch demonstration.
   *Spectral Normalization for GANs* (2018); D. Page, *How to train your ResNet* (myrtle.ai, 2018) and
   the DAWNBench CIFAR-10 leaderboard; scikit-learn *Faces recognition example using eigenfaces and
   SVMs*; McInnes et al., *UMAP* (2018).
+
+## Windows GAN continuation and isolated demo evidence
+
+```bash
+python part4_recognition/gan/train.py --data_root /path/to/keras_png_slices_data --device cuda --epochs 60 --moment_weight 10 --output_dir results/gan_improved
+python part4_recognition/gan/sample.py --checkpoint results/gan_improved/dcgan.pt --output_dir results/gan_new_samples --device cuda
+python scripts/collect_demo_evidence.py --data_root /path/to/keras_png_slices_data --gan_checkpoint results/gan_improved/dcgan.pt --output_dir results/new_demo_run
+```
+
+The collector requires a new output directory and records stage exit codes, checkpoint hashes and device.
+For Rangpur, `slurm/full_demo.slurm` additionally runs CIFAR inference with TTA and one training epoch
+from the saved weights, using the original cluster project's environment and data. It has not yet been
+executed on Rangpur. The local collector passed all four stages. Do not substitute it for the formal demo.
+Training checkpoints contain optimizer states but `--resume` is not implemented.
