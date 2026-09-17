@@ -251,3 +251,18 @@ def test_unet_validation_only_keeps_test_unloaded_and_small_last_batch(tmp_path,
     assert np.isfinite(report["history"]["train_loss"]).all()
     assert not (tmp_path / "results.json").exists()
     assert (tmp_path / "unet_best.pt").exists()
+
+
+def test_reference_archive_comparison_detects_changed_bytes(tmp_path):
+    import zipfile
+    from scripts.verify_oasis_archive import verify
+
+    root = tmp_path / "data"
+    root.mkdir()
+    (root / "example.png").write_bytes(b"original PNG bytes")
+    archive = tmp_path / "reference.zip"
+    with zipfile.ZipFile(archive, "w") as z:
+        z.writestr("keras_png_slices_data/example.png", b"original PNG bytes")
+    assert verify(root, archive)["matches"]
+    (root / "example.png").write_bytes(b"changed PNG bytes")
+    assert verify(root, archive)["missing_or_different"] == ["example.png"]
