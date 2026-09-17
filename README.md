@@ -53,9 +53,12 @@ part3_cnn/lfw_cnn.py    small CNN for LFW
 part3_cnn/dawnbench/    ResNet-18, GPU-resident CIFAR-10 pipeline, fast trainer
 part4_recognition/      oasis_data.py (dataset) + vae/ unet/ gan/ (model, train, visualise/predict)
 slurm/                  sbatch scripts for Rangpur (+ interactive GPU shell for the live demo)
+tests/                  fast unit tests (DFT correctness, Dice metric, model shapes, label encoding)
 docs/                   figures, demo guide (Chinese), AI-usage statement
 results/                created at run time (git-ignored)
 ```
+
+Development checks: `pip install -r requirements-dev.txt && python -m pytest tests -q && ruff check .`
 
 ---
 

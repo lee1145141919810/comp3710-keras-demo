@@ -1,0 +1,106 @@
+"""Fast unit tests (no downloads, CPU only):  python -m pytest tests -q"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import numpy as np
+import torch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from part1_dft.dft_torch import naive_dft_torch, square_wave_fourier_torch, to_numpy_complex  # noqa: E402
+from part1_dft.square_wave_numpy import naive_dft, square_wave_fourier  # noqa: E402
+from part3_cnn.dawnbench.data import augment  # noqa: E402
+from part3_cnn.dawnbench.resnet import resnet18  # noqa: E402
+from part4_recognition.gan.model import Discriminator, Generator  # noqa: E402
+from part4_recognition.oasis_data import grey_levels_to_labels, labels_to_one_hot  # noqa: E402
+from part4_recognition.unet.metrics import DiceAccumulator, soft_dice_loss  # noqa: E402
+from part4_recognition.unet.model import UNet  # noqa: E402
+from part4_recognition.vae.model import ConvVAE, vae_loss  # noqa: E402
+
+
+# -- Part 1 ------------------------------------------------------------------------------------
+def test_naive_dft_matches_fft():
+    x = np.random.default_rng(0).standard_normal(64)
+    assert np.allclose(naive_dft(x), np.fft.fft(x))
+
+
+def test_torch_dft_matches_fft_in_chunks():
+    x = torch.randn(96, dtype=torch.float64)
+    X = to_numpy_complex(naive_dft_torch(x, chunk_elements=96 * 10))  # forces several row chunks
+    assert np.allclose(X, np.fft.fft(x.numpy()))
+
+
+def test_torch_fourier_series_matches_numpy():
+    t = np.linspace(0, 1, 512, endpoint=False)
+    expected = square_wave_fourier(t, 1.0, 7)
+    got = square_wave_fourier_torch(torch.as_tensor(t), 1.0, 7).numpy()
+    assert np.allclose(expected, got)
+
+
+# -- Part 3.2 ----------------------------------------------------------------------------------
+def test_resnet18_shape_and_size():
+    model = resnet18()
+    assert model(torch.randn(2, 3, 32, 32)).shape == (2, 10)
+    assert sum(p.numel() for p in model.parameters()) == 11_173_962
+
+
+def test_augment_crops_flips_and_cuts():
+    padded = torch.rand(8, 3, 40, 40)
+    out = augment(padded, crop=32, cutout=8)
+    assert out.shape == (8, 3, 32, 32)
+    assert (out == 0).any(), "cutout should zero some pixels"
+
+
+# -- Part 4 data -------------------------------------------------------------------------------
+def test_grey_levels_to_labels_and_one_hot():
+    mask = np.array([[0, 85], [170, 255]], dtype=np.uint8)
+    labels = grey_levels_to_labels(mask)
+    assert labels.tolist() == [[0, 1], [2, 3]]
+    one_hot = labels_to_one_hot(torch.as_tensor(labels)[None])
+    assert one_hot.shape == (1, 4, 2, 2)
+    assert torch.equal(one_hot.argmax(1)[0], torch.as_tensor(labels))
+
+
+# -- Part 4 UNet metrics -----------------------------------------------------------------------
+def test_dice_perfect_and_half_overlap():
+    target = torch.tensor([[[0, 0, 1, 1]]])  # [B=1, H=1, W=4]
+    acc = DiceAccumulator(n_classes=2)
+    acc.update(target.clone(), target)
+    assert torch.allclose(acc.per_class(), torch.ones(2))
+    assert acc.pixel_accuracy() == 1.0
+
+    acc = DiceAccumulator(n_classes=2)
+    acc.update(torch.tensor([[[0, 0, 0, 1]]]), target)  # class 1: |P∩G|=1, |P|=1, |G|=2 -> 2/3
+    assert torch.allclose(acc.per_class(), torch.tensor([0.8, 2 / 3]), atol=1e-6)
+
+
+def test_soft_dice_loss_zero_for_confident_correct_prediction():
+    target = torch.randint(0, 4, (2, 8, 8))
+    one_hot = labels_to_one_hot(target)
+    logits = one_hot * 50.0  # near one-hot softmax
+    assert soft_dice_loss(logits, one_hot).item() < 1e-3
+
+
+def test_unet_output_channels_and_size():
+    net = UNet(1, 4, base_channels=8, depth=3)
+    assert net(torch.rand(1, 1, 64, 64)).shape == (1, 4, 64, 64)
+
+
+# -- Part 4 VAE / GAN --------------------------------------------------------------------------
+def test_vae_forward_and_loss():
+    vae = ConvVAE(image_size=64, latent_dim=2, base_channels=8)
+    x = torch.rand(3, 1, 64, 64)
+    x_hat, mu, log_var = vae(x)
+    assert x_hat.shape == x.shape and mu.shape == (3, 2)
+    total, rec, kl = vae_loss(x_hat, x, mu, log_var)
+    assert torch.isfinite(total) and kl >= 0
+
+
+def test_gan_shapes():
+    g, d = Generator(latent_dim=16, image_size=64, base_channels=8), Discriminator(image_size=64, base_channels=8)
+    fake = g(torch.randn(4, 16))
+    assert fake.shape == (4, 1, 64, 64) and fake.min() >= -1 and fake.max() <= 1
+    assert d(fake).shape == (4,)
