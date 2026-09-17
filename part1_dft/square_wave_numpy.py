@@ -156,8 +156,9 @@ def main() -> None:
     for nh in args.harmonics:
         y = square_wave_fourier(t, args.f0, nh)
         err = np.abs(y - square)
-        # Gibbs phenomenon: the overshoot next to a jump tends to ~9 % and never vanishes, while the
-        # mean error keeps shrinking as more harmonics are added.
+        # Gibbs phenomenon: the overshoot next to a jump tends to ~9 % of the jump height (the jump is
+        # 2 here, so ~18 % of the amplitude) and never vanishes, while the mean error keeps shrinking
+        # as more harmonics are added.
         print(f"N={nh:>3d} harmonics: mean |error|={err.mean():.4f}, peak overshoot={100 * (np.abs(y).max() - 1):.1f}%")
 
     # 2. Decompose the reconstructed wave with the naive DFT and the FFT ------------------------
