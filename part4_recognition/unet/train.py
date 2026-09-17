@@ -74,7 +74,7 @@ def main() -> None:
     parser.add_argument("--dice_weight", type=float, default=1.0, help="weight of the soft Dice term added to cross-entropy")
     parser.add_argument("--augment", action="store_true", help="random flips + intensity jitter")
     parser.add_argument("--amp", action="store_true", help="mixed precision (CUDA only)")
-    parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument("--num_workers", type=int, default=0, help="DataLoader workers; the dataset is already in RAM so 0 is usually fastest")
     parser.add_argument("--max_samples", type=int, default=None, help="limit slices per split (smoke tests)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default=None)

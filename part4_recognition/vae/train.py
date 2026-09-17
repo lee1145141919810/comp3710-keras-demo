@@ -61,7 +61,7 @@ def main() -> None:
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=1e-3)
-    parser.add_argument("--num_workers", type=int, default=2)
+    parser.add_argument("--num_workers", type=int, default=0, help="DataLoader workers; the dataset is already in RAM so 0 is usually fastest")
     parser.add_argument("--max_samples", type=int, default=None, help="limit slices per split (smoke tests)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default=None)

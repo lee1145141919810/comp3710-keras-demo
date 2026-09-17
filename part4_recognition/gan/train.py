@@ -49,10 +49,10 @@ def diversity_stats(fake: torch.Tensor, real: torch.Tensor) -> dict[str, float]:
     training gives a fake/real ratio close to 1. Also reports the mean distance of each fake image to
     its nearest real neighbour (large -> the generator is not simply memorising training slices).
     """
-    f, r = fake.flatten(1).float(), real.flatten(1).float()
+    f, r = fake.flatten(1).float().cpu(), real.flatten(1).float().cpu()  # tiny: 64 x pixels
     d_ff, d_rr = torch.cdist(f, f), torch.cdist(r, r)
-    off = ~torch.eye(len(f), dtype=torch.bool, device=f.device)
-    off_r = ~torch.eye(len(r), dtype=torch.bool, device=r.device)
+    off = ~torch.eye(len(f), dtype=torch.bool)
+    off_r = ~torch.eye(len(r), dtype=torch.bool)
     nn_dist = torch.cdist(f, r).min(dim=1).values
     return {
         "mean_pairwise_dist_fake": d_ff[off].mean().item(),
@@ -109,7 +109,7 @@ def main() -> None:
     parser.add_argument("--lr_d", type=float, default=2e-4)
     parser.add_argument("--beta1", type=float, default=0.5, help="Adam beta1 (0.5 as in the DCGAN paper)")
     parser.add_argument("--real_label", type=float, default=0.9, help="one-sided label smoothing for real images")
-    parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument("--num_workers", type=int, default=0, help="DataLoader workers; the dataset is already in RAM so 0 is usually fastest")
     parser.add_argument("--snapshot_every", type=int, default=10, help="epochs between rows of evolution.png")
     parser.add_argument("--max_samples", type=int, default=None, help="limit training slices (smoke tests)")
     parser.add_argument("--seed", type=int, default=42)

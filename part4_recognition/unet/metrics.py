@@ -40,16 +40,18 @@ class DiceAccumulator:
     @torch.no_grad()
     def update(self, pred_labels: torch.Tensor, target_labels: torch.Tensor) -> None:
         """``pred_labels`` / ``target_labels``: integer label maps ``[B, H, W]``."""
-        pred = F.one_hot(pred_labels, self.n_classes).permute(0, 3, 1, 2).to(torch.float64)
-        tgt = F.one_hot(target_labels, self.n_classes).permute(0, 3, 1, 2).to(torch.float64)
-        inter = (pred * tgt).sum((2, 3))  # [B, C]
-        p_sum, t_sum = pred.sum((2, 3)), tgt.sum((2, 3))
-        self.intersection += inter.sum(0).cpu()
-        self.pred_sum += p_sum.sum(0).cpu()
-        self.target_sum += t_sum.sum(0).cpu()
+        # Per-image pixel counts fit exactly in float32 (< 2^24); float64 is only used for the
+        # running totals on the CPU because Apple MPS has no float64 support.
+        pred = F.one_hot(pred_labels, self.n_classes).permute(0, 3, 1, 2).float()
+        tgt = F.one_hot(target_labels, self.n_classes).permute(0, 3, 1, 2).float()
+        inter = (pred * tgt).sum((2, 3)).cpu().double()  # [B, C]
+        p_sum, t_sum = pred.sum((2, 3)).cpu().double(), tgt.sum((2, 3)).cpu().double()
+        self.intersection += inter.sum(0)
+        self.pred_sum += p_sum.sum(0)
+        self.target_sum += t_sum.sum(0)
         # per-image DSC, only counting classes present in either prediction or ground truth
         denom = p_sum + t_sum
-        self.per_image.append(torch.where(denom > 0, 2 * inter / denom.clamp_min(1e-12), torch.nan).cpu())
+        self.per_image.append(torch.where(denom > 0, 2 * inter / denom.clamp_min(1e-12), torch.nan))
 
     def per_class(self) -> torch.Tensor:
         """Dataset-level DSC for each class ``[C]``."""

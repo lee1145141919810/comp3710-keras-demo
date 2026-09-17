@@ -114,7 +114,7 @@ def main() -> None:
     print(f"device: {describe_device(device)}  checkpoint: {args.checkpoint} (epoch {ckpt.get('epoch')}, val mean DSC {ckpt.get('val_dice', float('nan')):.4f})")
 
     ds = OASISDataset(args.data_root, args.split, ckpt["image_size"], with_masks=True, max_samples=args.max_samples)
-    loader = DataLoader(ds, args.batch_size, shuffle=False, num_workers=2, pin_memory=device.type == "cuda")
+    loader = DataLoader(ds, args.batch_size, shuffle=False, num_workers=0, pin_memory=device.type == "cuda")
 
     synchronize(device)
     t0 = time.time()
