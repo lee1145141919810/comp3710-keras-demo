@@ -92,6 +92,7 @@ def evaluate(model: nn.Module, x: torch.Tensor, y: torch.Tensor, batch_size: int
 
 # --------------------------------------------------------------------------------------------
 def main() -> None:
+    global OUT_DIR
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--data_dir", default=str(DATA_DIR / "cifar10"), help="where CIFAR-10 is (or will be) downloaded")
     parser.add_argument("--epochs", type=int, default=30)
@@ -112,8 +113,15 @@ def main() -> None:
     parser.add_argument("--no_download", action="store_true", help="fail instead of downloading CIFAR-10 (offline compute nodes)")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device", default=None)
+    parser.add_argument("--output_dir", type=Path, default=OUT_DIR, help="isolated directory for this run")
     args = parser.parse_args()
+    OUT_DIR = args.output_dir
+    args.output_dir = str(args.output_dir)
 
+    if args.epochs < 1 or args.batch_size < 1:
+        parser.error("epochs and batch_size must be positive")
+    if args.eval_only and not args.checkpoint:
+        parser.error("--eval_only requires --checkpoint")
     set_seed(args.seed)
     ensure_dir(OUT_DIR)
     device = get_device(args.device)
@@ -158,6 +166,8 @@ def main() -> None:
 
     history: dict[str, list[float]] = {"train_loss": [], "train_acc": [], "test_acc": [], "test_loss": [], "epoch_time": []}
     step, train_time, reached_at = 0, 0.0, None
+    synchronize(device)
+    training_started = time.perf_counter()
     print(f"training {args.epochs} epochs x {steps_per_epoch} steps, batch {args.batch_size}, peak lr {args.peak_lr}")
     print(f"{'epoch':>5} {'lr':>7} {'train loss':>10} {'train acc':>9} {'test loss':>9} {'test acc':>8} {'epoch s':>8} {'total s':>8}")
 
@@ -198,16 +208,24 @@ def main() -> None:
         train_loss, train_acc = loss_sum.item() / n_train, correct.item() / n_train
         for k, v in zip(("train_loss", "train_acc", "test_acc", "test_loss", "epoch_time"), (train_loss, train_acc, test_acc, test_loss, epoch_time)):
             history[k].append(v)
+        synchronize(device)
+        elapsed_with_eval = time.perf_counter() - training_started
         if reached_at is None and test_acc >= args.target_acc:
-            reached_at = (epoch, train_time)
+            reached_at = {"epoch": epoch, "train_time_s": train_time,
+                          "elapsed_with_evaluation_s": elapsed_with_eval, "tta": False}
         print(f"{epoch:>5d} {lr:>7.4f} {train_loss:>10.4f} {train_acc:>9.4f} {test_loss:>9.4f} {test_acc:>8.4f} {epoch_time:>8.1f} {train_time:>8.1f}")
 
     # -- final report -------------------------------------------------------------------------
     final_acc, _ = evaluate(model, data["test_x"], data["test_y"], 1000, amp_dtype, args.tta)
+    synchronize(device)
+    elapsed_with_eval = time.perf_counter() - training_started
+    if reached_at is None and final_acc >= args.target_acc:
+        reached_at = {"epoch": args.epochs, "train_time_s": train_time,
+                      "elapsed_with_evaluation_s": elapsed_with_eval, "tta": args.tta}
     print(f"\nfinal test accuracy: {final_acc:.4f}{' (with flip TTA)' if args.tta else ''}")
     print(f"total training time (excluding evaluation): {train_time:.1f}s")
     if reached_at:
-        print(f"{args.target_acc:.0%} first reached at epoch {reached_at[0]} after {reached_at[1]:.1f}s of training")
+        print(f"{args.target_acc:.0%} first reached: {reached_at}")
     else:
         print(f"{args.target_acc:.0%} was not reached")
 
@@ -223,7 +241,11 @@ def main() -> None:
                 "amp_dtype": str(amp_dtype),
                 "final_test_accuracy": final_acc,
                 "train_time_s": train_time,
-                "target_reached": {"epoch": reached_at[0], "train_time_s": reached_at[1]} if reached_at else None,
+                "target_reached": reached_at,
+                "elapsed_with_evaluation_s": elapsed_with_eval,
+                "timing_scope": "train_time excludes evaluation; elapsed includes validation/test passes and final TTA, excludes data/model setup",
+                "n_train": n_train, "n_test": len(data["test_y"]),
+                "torch_version": str(torch.__version__),
                 "history": history,
                 "args": vars(args),
             },

@@ -1,0 +1,3 @@
+# Keep the same correctness-focused checks on developer machines and the cluster.
+[lint]
+select = ["E4", "E7", "E9", "F"]

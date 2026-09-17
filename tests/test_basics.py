@@ -136,3 +136,118 @@ def test_oasis_mask_pairing_same_name_and_seg_prefix(tmp_path):
     assert len(ds) == 2
     img, mask = ds[0]
     assert img.shape == (1, 8, 8) and mask.shape == (8, 8)
+
+
+def test_missing_mask_never_falls_back_to_sorted_pairing(tmp_path):
+    import pytest
+    from part4_recognition.oasis_data import OASISDataset
+
+    image = tmp_path / "case_001_slice_1.nii.png"
+    seg = tmp_path / "seg"
+    seg.mkdir()
+    (seg / "seg_999_slice_1.nii.png").touch()
+    with pytest.raises(FileNotFoundError):
+        OASISDataset._resolve_masks([image], seg)
+
+
+def test_invalid_mask_levels_rejected():
+    import pytest
+    with pytest.raises(ValueError, match="Unknown mask"):
+        grey_levels_to_labels(np.array([[0, 84, 171, 255]], dtype=np.uint8))
+
+
+def test_ambiguous_mask_identity_rejected(tmp_path):
+    import pytest
+    from part4_recognition.oasis_data import OASISDataset
+
+    (tmp_path / "mask_001_slice_1.nii.png").touch()
+    (tmp_path / "duplicate_001_slice_1.nii.png").touch()
+    with pytest.raises(ValueError, match="Ambiguous"):
+        OASISDataset._matching_mask(Path("case_001_slice_1.nii.png"), tmp_path)
+
+
+def test_hard_categorical_predictions():
+    from part4_recognition.unet.predict import predict_one_hot
+
+    model = UNet(1, 4, base_channels=4, depth=2).eval()
+    output = predict_one_hot(model, torch.rand(2, 1, 32, 32))
+    assert output.shape == (2, 4, 32, 32)
+    assert torch.equal(output.sum(1), torch.ones(2, 32, 32))
+    assert set(output.unique().tolist()) <= {0.0, 1.0}
+
+
+def test_cifar_training_report_and_eval_guard(tmp_path, monkeypatch):
+    """Exercise CLI/timing/checkpoint plumbing with synthetic data, not benchmark evidence."""
+    import json
+    import pytest
+    from part3_cnn.dawnbench import train_cifar10 as trainer
+
+    monkeypatch.setattr(trainer, "OUT_DIR", tmp_path)
+    monkeypatch.setattr(sys, "argv", ["train", "--eval_only"])
+    with pytest.raises(SystemExit) as error:
+        trainer.main()
+    assert error.value.code == 2
+
+    def fake_data(*args, **kwargs):
+        return {"train_x": torch.rand(4, 3, 40, 40), "train_y": torch.zeros(4, dtype=torch.long),
+                "test_x": torch.rand(4, 3, 32, 32), "test_y": torch.zeros(4, dtype=torch.long)}
+
+    monkeypatch.setattr(trainer, "load_cifar10", fake_data)
+    monkeypatch.setattr(trainer, "resnet18", lambda **kw: torch.nn.Sequential(
+        torch.nn.AdaptiveAvgPool2d(1), torch.nn.Flatten(), torch.nn.Linear(3, 10)))
+    monkeypatch.setattr(sys, "argv", ["train", "--epochs", "1", "--batch_size", "2",
+                                    "--target_acc", "0", "--tta", "--device", "cpu",
+                                    "--output_dir", str(tmp_path)])
+    trainer.main()
+    report = json.loads((tmp_path / "results.json").read_text())
+    assert report["n_train"] == report["n_test"] == 4
+    assert report["target_reached"]["epoch"] == 1
+    assert report["elapsed_with_evaluation_s"] >= report["train_time_s"] > 0
+    assert (tmp_path / "resnet18_cifar10.pt").is_file()
+
+
+def test_audit_rejects_cross_split_case_leakage(tmp_path):
+    import pytest
+    from PIL import Image
+    from scripts.audit_oasis import audit
+
+    for split in ("train", "validate", "test"):
+        images = tmp_path / f"keras_png_slices_{split}"
+        masks = tmp_path / f"keras_png_slices_seg_{split}"
+        images.mkdir()
+        masks.mkdir()
+        Image.fromarray(np.zeros((8, 8), dtype=np.uint8)).save(images / "case_001_slice_0.nii.png")
+        Image.fromarray(np.zeros((8, 8), dtype=np.uint8)).save(masks / "seg_001_slice_0.nii.png")
+    with pytest.raises(ValueError, match="leakage"):
+        audit(tmp_path)
+
+
+def test_unet_validation_only_keeps_test_unloaded_and_small_last_batch(tmp_path, monkeypatch):
+    import json
+    from part4_recognition.unet import train as trainer
+
+    seen_splits = []
+
+    class TinyData(torch.utils.data.Dataset):
+        def __init__(self, root, split, *args, **kwargs):
+            seen_splits.append(split)
+            assert split != "test", "test set must stay untouched while choosing a model"
+        def __len__(self):
+            return 3
+        def __getitem__(self, index):
+            return torch.ones(1, 8, 8), torch.full((8, 8), index, dtype=torch.long)
+        def label_fractions(self):
+            return np.array([1 / 3, 1 / 3, 1 / 3, 0])
+
+    monkeypatch.setattr(trainer, "OASISDataset", TinyData)
+    monkeypatch.setattr(trainer, "UNet", lambda *args: torch.nn.Conv2d(1, 4, 1))
+    monkeypatch.setattr(trainer, "OUT_DIR", tmp_path)
+    monkeypatch.setattr(sys, "argv", ["train", "--epochs", "1", "--batch_size", "2",
+                                    "--validation_only", "--device", "cpu", "--output_dir", str(tmp_path)])
+    trainer.main()
+    assert seen_splits == ["train", "validate"]
+    report = json.loads((tmp_path / "validation.json").read_text())
+    assert report["n_train"] == 3
+    assert np.isfinite(report["history"]["train_loss"]).all()
+    assert not (tmp_path / "results.json").exists()
+    assert (tmp_path / "unet_best.pt").exists()

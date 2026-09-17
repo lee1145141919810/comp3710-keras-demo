@@ -79,9 +79,12 @@ def parse_case_and_slice(filename: str) -> tuple[int, int]:
 
 def grey_levels_to_labels(mask: np.ndarray) -> np.ndarray:
     """Map mask grey levels {0, 85, 170, 255} -> class indices {0, 1, 2, 3} (nearest level wins)."""
-    if mask.max() <= N_CLASSES - 1:  # already stored as class indices
+    values = np.unique(mask)
+    if np.isin(values, np.arange(N_CLASSES)).all():
         return mask.astype(np.int64)
-    return np.rint(mask.astype(np.float32) / 85.0).clip(0, N_CLASSES - 1).astype(np.int64)
+    if not np.isin(values, LABEL_GREY_LEVELS).all():
+        raise ValueError(f"Unknown mask grey levels: {values.tolist()}; expected 0/85/170/255 or 0/1/2/3")
+    return (mask.astype(np.int64) // 85)
 
 
 def labels_to_one_hot(labels: torch.Tensor, n_classes: int = N_CLASSES) -> torch.Tensor:
@@ -123,6 +126,8 @@ class OASISDataset(Dataset):
 
         img_dir, seg_dir = (self.root / d for d in _SPLIT_DIRS[split])
         self.image_files = sorted(p for p in img_dir.iterdir() if p.suffix.lower() == ".png")
+        if max_samples is not None and max_samples <= 0:
+            raise ValueError("max_samples must be positive")
         if max_samples:
             self.image_files = self.image_files[:max_samples]
         if not self.image_files:
@@ -152,21 +157,21 @@ class OASISDataset(Dataset):
         swapped = seg_dir / image_path.name.replace("case_", "seg_", 1)
         if swapped.exists():
             return swapped
-        matches = sorted(seg_dir.glob(f"*{'_'.join(image_path.stem.split('_')[1:])}*"))
-        if matches:
+        key = parse_case_and_slice(image_path.name)
+        matches = [p for p in seg_dir.glob("*.png") if key != (-1, -1) and parse_case_and_slice(p.name) == key]
+        if len(matches) == 1:
             return matches[0]
+        if len(matches) > 1:
+            raise ValueError(f"Ambiguous masks for {image_path.name}: {matches}")
         raise FileNotFoundError(f"no segmentation mask for {image_path.name} in {seg_dir}")
 
     @classmethod
     def _resolve_masks(cls, image_files: list[Path], seg_dir: Path) -> list[Path]:
-        """Name-based pairing, falling back to sorted zip (the original Keras loader's strategy)."""
-        try:
-            return [cls._matching_mask(p, seg_dir) for p in image_files]
-        except FileNotFoundError:
-            seg_files = sorted(p for p in seg_dir.iterdir() if p.suffix.lower() == ".png")[: len(image_files)]
-            if len(seg_files) != len(image_files):
-                raise
-            return seg_files
+        """Require identity-based pairing; sorted order cannot establish ground-truth identity."""
+        masks = [cls._matching_mask(p, seg_dir) for p in image_files]
+        if len(set(masks)) != len(masks):
+            raise ValueError("Multiple images map to the same segmentation mask")
+        return masks
 
     def _load_stack(self, files: list[Path], resample: int, desc: str) -> np.ndarray:
         out = np.empty((len(files), self.image_size, self.image_size), dtype=np.uint8)

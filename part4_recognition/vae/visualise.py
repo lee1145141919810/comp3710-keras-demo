@@ -41,9 +41,10 @@ def encode_dataset(model: ConvVAE, loader: DataLoader, device: torch.device) -> 
 @torch.no_grad()
 def plot_reconstructions(model: ConvVAE, x: torch.Tensor, device: torch.device, path: Path, n: int = 10) -> None:
     model.eval()
+    n = min(n, len(x))
     x = x[:n].to(device)
     x_hat, _, _ = model(x)
-    fig, axes = plt.subplots(2, n, figsize=(1.6 * n, 3.4))
+    fig, axes = plt.subplots(2, n, figsize=(1.6 * n, 3.4), squeeze=False)
     for i in range(n):
         axes[0, i].imshow(x[i, 0].cpu(), cmap="gray", vmin=0, vmax=1)
         axes[1, i].imshow(x_hat[i, 0].cpu(), cmap="gray", vmin=0, vmax=1)
@@ -88,7 +89,11 @@ def plot_manifold_2d(model: ConvVAE, device: torch.device, path: Path, n: int = 
     canvas = imgs.reshape(n, n, s, s).transpose(0, 2, 1, 3).reshape(n * s, n * s)
 
     fig, ax = plt.subplots(figsize=(10, 10))
-    ax.imshow(canvas, cmap="gray", vmin=0, vmax=1, extent=[quantiles[0], quantiles[-1], quantiles[0], quantiles[-1]])
+    ax.imshow(canvas, cmap="gray", vmin=0, vmax=1)
+    # Quantile-spaced latent coordinates are nonuniform; label actual cell centres.
+    ticks = np.linspace(0, n - 1, 5, dtype=int)
+    ax.set_xticks((ticks + 0.5) * s, [f"{quantiles[i]:.2f}" for i in ticks])
+    ax.set_yticks((ticks + 0.5) * s, [f"{quantiles[::-1][i]:.2f}" for i in ticks])
     ax.set_xlabel("z_1")
     ax.set_ylabel("z_2")
     ax.set_title(f"VAE latent manifold ({n}x{n} grid over N(0,1) quantiles)")
@@ -143,9 +148,12 @@ def plot_pca_manifold(model: ConvVAE, mu: np.ndarray, device: torch.device, path
 def plot_interpolations(model: ConvVAE, x: torch.Tensor, device: torch.device, path: Path, n_pairs: int = 4, steps: int = 8) -> None:
     """Linear interpolation between the codes of pairs of real slices - a smooth manifold gives smooth morphs."""
     model.eval()
+    n_pairs = min(n_pairs, len(x) // 2)
+    if n_pairs == 0:
+        return
     x = x[: 2 * n_pairs].to(device)
     mu, _ = model.encode(x)
-    fig, axes = plt.subplots(n_pairs, steps, figsize=(1.5 * steps, 1.6 * n_pairs))
+    fig, axes = plt.subplots(n_pairs, steps, figsize=(1.5 * steps, 1.6 * n_pairs), squeeze=False)
     for r in range(n_pairs):
         a, b = mu[2 * r], mu[2 * r + 1]
         z = torch.stack([a + (b - a) * t for t in torch.linspace(0, 1, steps, device=device)])
@@ -172,7 +180,8 @@ def make_all_figures(model: ConvVAE, test_ds: OASISDataset, device: torch.device
         plot_latent_scatter(mu, slices, out_dir / f"latent_scatter_{tag}.png", "Encoded test slices in the 2-D latent space")
     else:
         plot_pca_manifold(model, mu, device, out_dir / f"manifold_pca_{tag}.png")
-    plot_umap(mu, slices, out_dir / f"umap_{tag}.png")
+    if model.latent_dim > 2 and len(mu) > 3:
+        plot_umap(mu, slices, out_dir / f"umap_{tag}.png")
 
 
 def main() -> None:

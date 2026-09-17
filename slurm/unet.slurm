@@ -12,7 +12,7 @@
 #SBATCH --cpus-per-task=6
 #SBATCH --mem=48G
 #SBATCH --time=02:00:00
-#SBATCH --output=logs/%x_%j.out
+#SBATCH --output=%x_%j.out
 
 set -euo pipefail
 mkdir -p logs

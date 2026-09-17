@@ -4,7 +4,7 @@
 
 The network outputs one channel per class (softmax -> categorical / one-hot segmentation) and is
 trained with cross-entropy + soft Dice loss. The validation split selects the best checkpoint by
-mean DSC; the test split is evaluated once at the end (per-class DSC must exceed 0.9).
+minimum class DSC (then mean DSC); the test split is evaluated once at the end (per-class DSC must exceed 0.9).
 """
 
 from __future__ import annotations
@@ -63,6 +63,7 @@ def train_one_epoch(model, loader, optimizer, scaler, device, amp_dtype, dice_we
 
 
 def main() -> None:
+    global OUT_DIR
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--data_root", default=None, help="folder containing keras_png_slices_train/ ...")
     parser.add_argument("--image_size", type=int, default=256)
@@ -78,8 +79,16 @@ def main() -> None:
     parser.add_argument("--max_samples", type=int, default=None, help="limit slices per split (smoke tests)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default=None)
+    parser.add_argument("--target_dsc", type=float, default=None, help="stop after an epoch when every validation class exceeds this threshold")
+    parser.add_argument("--validation_only", action="store_true", help="do not inspect test images or scores while tuning")
+    parser.add_argument("--init_checkpoint", default=None, help="warm-start model weights; starts a new optimizer/schedule")
+    parser.add_argument("--output_dir", type=Path, default=OUT_DIR, help="isolated directory for this run")
     args = parser.parse_args()
+    OUT_DIR = args.output_dir
+    args.output_dir = str(args.output_dir)
 
+    if args.epochs < 1 or args.batch_size < 1:
+        parser.error("epochs and batch_size must be positive")
     set_seed(args.seed)
     ensure_dir(OUT_DIR)
     device = get_device(args.device)
@@ -91,23 +100,25 @@ def main() -> None:
 
     train_ds = OASISDataset(args.data_root, "train", args.image_size, with_masks=True, max_samples=args.max_samples)
     val_ds = OASISDataset(args.data_root, "validate", args.image_size, with_masks=True, max_samples=args.max_samples)
-    test_ds = OASISDataset(args.data_root, "test", args.image_size, with_masks=True, max_samples=args.max_samples)
-    print(f"train {len(train_ds)} / validate {len(val_ds)} / test {len(test_ds)} slices; "
+    test_ds = None if args.validation_only else OASISDataset(args.data_root, "test", args.image_size, with_masks=True, max_samples=args.max_samples)
+    print(f"train {len(train_ds)} / validate {len(val_ds)} / test {len(test_ds) if test_ds is not None else 'not loaded'} slices; "
           f"train class fractions {dict(zip(CLASS_NAMES, np.round(train_ds.label_fractions(), 3).tolist()))}")
     pin = device.type == "cuda"
-    train_loader = DataLoader(train_ds, args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=pin, drop_last=True)
+    train_loader = DataLoader(train_ds, args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=pin, drop_last=False)
     val_loader = DataLoader(val_ds, args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=pin)
-    test_loader = DataLoader(test_ds, args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=pin)
+    test_loader = None if test_ds is None else DataLoader(test_ds, args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=pin)
 
     model = UNet(1, N_CLASSES, args.base_channels, args.depth).to(device)
     print(f"UNet(base={args.base_channels}, depth={args.depth}): {sum(p.numel() for p in model.parameters()):,} parameters")
+    if args.init_checkpoint:
+        model.load_state_dict(load_checkpoint(args.init_checkpoint, map_location=device)["state_dict"])
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     scaler = torch.amp.GradScaler(device.type, enabled=amp_dtype == torch.float16)
 
     ckpt_path = OUT_DIR / "unet_best.pt"
     history: dict[str, list] = {"train_loss": [], "train_dice": [], "val_dice": []}
-    best_val, start = -1.0, time.time()
+    best_val, best_min, start = -1.0, -1.0, time.time()
     for epoch in range(1, args.epochs + 1):
         t_epoch = time.time()
         train_loss, train_dice = train_one_epoch(model, train_loader, optimizer, scaler, device, amp_dtype, args.dice_weight, args.augment)
@@ -119,16 +130,33 @@ def main() -> None:
         fmt = lambda t: "[" + " ".join(f"{v:.3f}" for v in t.tolist()) + "]"  # noqa: E731
         print(f"epoch {epoch:3d}/{args.epochs}  loss {train_loss:.4f}  train DSC {fmt(train_dice)}  "
               f"val DSC {fmt(val_dice)} (mean {val_dice.mean():.4f})  [{time.time() - t_epoch:.0f}s]")
-        if val_dice.mean() > best_val:
-            best_val = float(val_dice.mean())
+        # The rubric requires every class, so prioritise the weakest class, then the mean.
+        if (float(val_dice.min()), float(val_dice.mean())) > (best_min, best_val):
+            best_min, best_val = float(val_dice.min()), float(val_dice.mean())
             torch.save({"state_dict": model.state_dict(), "image_size": args.image_size, "base_channels": args.base_channels,
-                        "depth": args.depth, "epoch": epoch, "val_dice": best_val}, ckpt_path)
-    print(f"training finished in {time.time() - start:.0f}s; best validation mean DSC {best_val:.4f} -> {ckpt_path}")
+                        "depth": args.depth, "epoch": epoch, "val_dice": best_val,
+                        "val_dice_per_class": val_dice.tolist(), "selection": "validation_min_class_then_mean",
+                        "args": vars(args)}, ckpt_path)
+        with open(OUT_DIR / "progress.json", "w") as f:
+            json.dump({"history": history, "args": vars(args), "epoch": epoch,
+                       "elapsed_s": time.time() - start}, f, indent=2)
+        if args.target_dsc is not None and bool((val_dice > args.target_dsc).all()):
+            print(f"All validation classes exceed {args.target_dsc}; stopping before inspecting test data.")
+            break
+    print(f"training finished in {time.time() - start:.0f}s; selected validation mean DSC {best_val:.4f} -> {ckpt_path}")
 
     # -- curves -------------------------------------------------------------------------------
     plot_curves({"train": history["train_loss"]}, OUT_DIR / "loss.png", "epoch", "CE + Dice loss", "UNet training loss")
     val_curves = {name: [d[c] for d in history["val_dice"]] for c, name in enumerate(CLASS_NAMES)}
     plot_curves(val_curves, OUT_DIR / "val_dice.png", "epoch", "DSC", "Validation Dice per class")
+
+    with open(OUT_DIR / "validation.json", "w") as f:
+        json.dump({"best_val_mean_dsc": best_val, "history": history, "args": vars(args),
+                   "device": describe_device(device), "training_time_s": time.time() - start,
+                   "n_train": len(train_ds), "n_validate": len(val_ds)}, f, indent=2)
+    if args.validation_only:
+        print("Validation-only run: test split not loaded. Use predict.py after choosing the final model.")
+        return
 
     # -- final test evaluation with the best checkpoint ---------------------------------------
     model.load_state_dict(load_checkpoint(ckpt_path, map_location=device)["state_dict"])

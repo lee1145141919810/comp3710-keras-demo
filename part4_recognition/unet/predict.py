@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 import time
@@ -47,6 +48,12 @@ def predict_labels(model: UNet, images: torch.Tensor) -> torch.Tensor:
     """Images ``[B, 1, H, W]`` -> predicted label maps ``[B, H, W]`` (argmax of the softmax output)."""
     probs = torch.softmax(model(images), dim=1)  # categorical / one-hot style output, one channel per class
     return probs.argmax(dim=1)
+
+
+@torch.no_grad()
+def predict_one_hot(model: UNet, images: torch.Tensor) -> torch.Tensor:
+    """Hard categorical segmentations [B, 4, H, W], exactly one active label per pixel."""
+    return torch.nn.functional.one_hot(predict_labels(model, images), N_CLASSES).permute(0, 3, 1, 2).float()
 
 
 @torch.no_grad()
@@ -98,6 +105,7 @@ def plot_predictions(model: UNet, ds: OASISDataset, indices: list[int], device: 
 
 
 def main() -> None:
+    global OUT_DIR
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--checkpoint", default=str(OUT_DIR / "unet_best.pt"))
     parser.add_argument("--data_root", default=None)
@@ -106,7 +114,10 @@ def main() -> None:
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--max_samples", type=int, default=None)
     parser.add_argument("--device", default=None)
+    parser.add_argument("--output_dir", type=Path, default=OUT_DIR, help="isolated directory for this run")
     args = parser.parse_args()
+    OUT_DIR = args.output_dir
+    args.output_dir = str(args.output_dir)
 
     device = get_device(args.device)
     ensure_dir(OUT_DIR)
@@ -120,15 +131,27 @@ def main() -> None:
     t0 = time.time()
     acc = evaluate_dataset(model, loader, device)
     synchronize(device)
-    print(f"\ninference on {len(ds)} {args.split} slices took {time.time() - t0:.1f}s\n")
+    inference_seconds = time.time() - t0
+    print(f"\ninference on {len(ds)} {args.split} slices took {inference_seconds:.1f}s\n")
     print(format_dice_table(acc))
 
     indices = args.indices or list(np.linspace(0, len(ds) - 1, 4, dtype=int))
     plot_predictions(model, ds, indices, device, OUT_DIR / f"predictions_{args.split}.png")
+    # Save a small, inspectable categorical example, not a multi-GB whole-split tensor.
+    images = torch.stack([ds[i][0] for i in indices]).to(device)
+    one_hot = predict_one_hot(model, images).cpu().numpy().astype(np.uint8)
+    np.savez_compressed(OUT_DIR / f"categorical_{args.split}.npz", one_hot=one_hot,
+                        indices=np.asarray(indices), filenames=np.asarray([ds.image_files[i].name for i in indices]))
     with open(OUT_DIR / f"dice_{args.split}.json", "w") as f:
         json.dump({"dsc_per_class": dict(zip(CLASS_NAMES, acc.per_class().tolist())),
                    "dsc_per_image_mean": dict(zip(CLASS_NAMES, acc.per_image_mean().tolist())),
-                   "pixel_accuracy": acc.pixel_accuracy(), "n_slices": len(ds)}, f, indent=2)
+                   "pixel_accuracy": acc.pixel_accuracy(), "n_slices": len(ds),
+                   "split": args.split, "image_size": ckpt["image_size"],
+                   "checkpoint": str(args.checkpoint),
+                   "checkpoint_sha256": hashlib.sha256(Path(args.checkpoint).read_bytes()).hexdigest(),
+                   "device": describe_device(device), "inference_seconds": inference_seconds,
+                   "all_labels_above_0_9": bool((acc.per_class() > 0.9).all()),
+                   "max_samples": args.max_samples}, f, indent=2)
     print(f"[saved] {OUT_DIR / f'dice_{args.split}.json'}")
 
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Train Part 4 (VAE, UNet, GAN) on a local copy of keras_png_slices_data.
+# Train Part 4 Medium (VAE, UNet) on a local copy of keras_png_slices_data.
 # Default path is the one used on the author's Mac; override with OASIS_ROOT.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -17,5 +17,7 @@ python part4_recognition/unet/train.py --data_root "$ROOT" --epochs 15 --batch_s
 echo "== Task 2: live inference (demo command) =="
 python part4_recognition/unet/predict.py --checkpoint results/part4_unet/unet_best.pt --data_root "$ROOT"
 
-echo "== Task 3: DCGAN =="
-python part4_recognition/gan/train.py --data_root "$ROOT" --image_size 128 --epochs 60
+# Hard-only task: opt in explicitly with RUN_GAN=1.
+if [[ "${RUN_GAN:-0}" == "1" ]]; then
+    python part4_recognition/gan/train.py --data_root "$ROOT" --image_size 128 --epochs 60
+fi

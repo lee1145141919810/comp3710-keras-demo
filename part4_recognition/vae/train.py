@@ -51,6 +51,7 @@ def run_epoch(model: ConvVAE, loader: DataLoader, device: torch.device, beta: fl
 
 
 def main() -> None:
+    global OUT_DIR
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--data_root", default=None, help="folder containing keras_png_slices_train/ ...")
     parser.add_argument("--image_size", type=int, default=128, help="slices are resized to this (64 / 128 / 256)")
@@ -65,8 +66,13 @@ def main() -> None:
     parser.add_argument("--max_samples", type=int, default=None, help="limit slices per split (smoke tests)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default=None)
+    parser.add_argument("--output_dir", type=Path, default=OUT_DIR, help="isolated directory for this run")
     args = parser.parse_args()
+    OUT_DIR = args.output_dir
+    args.output_dir = str(args.output_dir)
 
+    if args.epochs < 1 or args.batch_size < 1:
+        parser.error("epochs and batch_size must be positive")
     set_seed(args.seed)
     ensure_dir(OUT_DIR)
     device = get_device(args.device)
@@ -76,7 +82,7 @@ def main() -> None:
     val_ds = OASISDataset(args.data_root, "validate", args.image_size, max_samples=args.max_samples)
     test_ds = OASISDataset(args.data_root, "test", args.image_size, max_samples=args.max_samples)
     pin = device.type == "cuda"
-    train_loader = DataLoader(train_ds, args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=pin, drop_last=True)
+    train_loader = DataLoader(train_ds, args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=pin, drop_last=False)
     val_loader = DataLoader(val_ds, args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=pin)
     print(f"train {len(train_ds)} / validate {len(val_ds)} / test {len(test_ds)} slices at {args.image_size}x{args.image_size}")
 
