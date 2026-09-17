@@ -124,7 +124,8 @@ def main() -> None:
 
     # -- data ---------------------------------------------------------------------------------
     t0 = time.time()
-    data_dtype = torch.float16 if device.type == "cuda" else torch.float32
+    # Keep the GPU-resident dataset in half precision only when autocast will consume it that way.
+    data_dtype = torch.float16 if amp_dtype is not None else torch.float32
     data = load_cifar10(args.data_dir, device, dtype=data_dtype, subset=args.subset, download=not args.no_download)
     n_train = len(data["train_x"])
     print(f"data on device: train {tuple(data['train_x'].shape)}  test {tuple(data['test_x'].shape)}  ({time.time() - t0:.1f}s)")
