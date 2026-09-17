@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Data, checkpoints and generated outputs (too large / reproducible)
+data/
+results/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.npz
+logs/
+slurm-*.out
+
+# Uploaded task sheets (kept out of version control)
+uploads/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

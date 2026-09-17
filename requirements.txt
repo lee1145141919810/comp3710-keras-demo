@@ -1,0 +1,15 @@
+# Core numerical / ML stack (Python >= 3.10)
+numpy>=1.26
+scipy>=1.11
+scikit-learn>=1.4
+matplotlib>=3.8
+pillow>=10.0
+tqdm>=4.66
+
+# Deep learning. On the Rangpur cluster / a CUDA machine install the CUDA build
+# instead, e.g.  pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+torch>=2.2
+torchvision>=0.17
+
+# Part 4 Task 1 - manifold visualisation of the VAE latent space
+umap-learn>=0.5
